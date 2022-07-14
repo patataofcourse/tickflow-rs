@@ -18,7 +18,7 @@ pub enum Arg {
     Unsigned(u32),
     String(String),
     Array(Array),
-    Pointer(i32),
+    Pointer(Pointer),
     Struct(Vec<u8>),
     Unknown(u32),
 }
@@ -31,6 +31,8 @@ pub enum Array {
     Half(Vec<u16>),
     SignedHalf(Vec<i16>),
 }
+
+pub struct Pointer(pub i32);
 
 impl Arg {
     pub fn from_struct(s: impl Into<Vec<u8>>) -> Self {

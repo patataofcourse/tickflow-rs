@@ -1,17 +1,17 @@
-use super::TickflowOp;
+use super::{Pointer, TickflowOp};
 
 pub enum MegamixOp {
     CallSub(u32),
     CallFunc(u32),
-    Call(i32),
-    SetFunc { func: u32, pos: i32 },
+    Call(Pointer),
+    SetFunc { func: u32, pos: Pointer },
     KillAll,
     KillCat(u32),
-    KillLoc(i32),
+    KillLoc(Pointer),
     KillSub(u32),
     RunSub(u32),
     RunFunc(u32),
-    Run(i32),
+    Run(Pointer),
     Return,
     Stop,
     Cat(u32),
