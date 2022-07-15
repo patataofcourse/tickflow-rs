@@ -32,7 +32,19 @@ pub enum Array {
     SignedHalf(Vec<i16>),
 }
 
-pub struct Pointer(pub i32);
+pub struct Pointer(pub u32);
+
+pub trait OperationSet {
+    fn get_operation(op: TickflowOp) -> Self
+    where
+        Self: Sized;
+}
+
+impl OperationSet for TickflowOp {
+    fn get_operation(op: TickflowOp) -> Self {
+        op
+    }
+}
 
 impl Arg {
     pub fn from_struct(s: impl Into<Vec<u8>>) -> Self {
