@@ -13,8 +13,10 @@ macro_rules! tf_op_args {
         #[allow(unused_mut)]
         let mut args = vec![];
         $(
+            #[allow(unused_mut)]
             let mut val = ($argnum, false);
             $(val.1 = $special)?
+            args.push(val);
         )*
 
         $crate::data::ArgsTickflowOp {
