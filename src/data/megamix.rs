@@ -140,4 +140,10 @@ impl OperationSet for MegamixOp {
     fn get_undepth_operations() -> Vec<ArgsTickflowOp> {
         todo!();
     }
+    fn get_scene_operation() -> ArgsTickflowOp {
+        todo!();
+    }
+    fn get_return_operations() -> Vec<ArgsTickflowOp> {
+        todo!();
+    }
 }

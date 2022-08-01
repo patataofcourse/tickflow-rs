@@ -1,3 +1,5 @@
+use crate::tf_op_args;
+
 pub mod macros;
 
 /// Data representation for Rhythm Heaven Megamix (3DS)
@@ -61,9 +63,9 @@ pub trait OperationSet {
     where
         Self: Sized;
     fn get_call_operations() -> Vec<ArgsTickflowOp>;
-    fn is_call_operation(op: RawTickflowOp) -> Option<ArgsTickflowOp> {
+    fn is_call_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
         for call_op in Self::get_call_operations() {
-            if op.op == call_op.op {
+            if op.op == call_op.op && (call_op.scene == -1 || call_op.scene == scene) {
                 match &call_op.arg0 {
                     None => return Some(call_op),
                     Some(c) => {
@@ -77,14 +79,14 @@ pub trait OperationSet {
         None
     }
     fn get_string_operations() -> Vec<ArgsTickflowOp>;
-    fn is_string_operation(op: RawTickflowOp) -> Option<ArgsTickflowOp> {
-        for str_op in Self::get_string_operations() {
-            if op.op == str_op.op {
-                match &str_op.arg0 {
-                    None => return Some(str_op),
+    fn is_string_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
+        for return_op in Self::get_return_operations() {
+            if op.op == return_op.op && (return_op.scene == -1 || return_op.scene == scene) {
+                match &return_op.arg0 {
+                    None => return Some(return_op),
                     Some(c) => {
                         if op.arg0 == *c {
-                            return Some(str_op);
+                            return Some(return_op);
                         }
                     }
                 }
@@ -93,9 +95,9 @@ pub trait OperationSet {
         None
     }
     fn get_array_operations() -> Vec<ArgsTickflowOp>;
-    fn is_array_operation(op: RawTickflowOp) -> Option<ArgsTickflowOp> {
+    fn is_array_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
         for array_op in Self::get_array_operations() {
-            if op.op == array_op.op {
+            if op.op == array_op.op && (array_op.scene == -1 || array_op.scene == scene) {
                 match &array_op.arg0 {
                     None => return Some(array_op),
                     Some(c) => {
@@ -109,9 +111,9 @@ pub trait OperationSet {
         None
     }
     fn get_depth_operations() -> Vec<ArgsTickflowOp>;
-    fn is_depth_operation(op: RawTickflowOp) -> Option<ArgsTickflowOp> {
+    fn is_depth_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
         for depth_op in Self::get_depth_operations() {
-            if op.op == depth_op.op {
+            if op.op == depth_op.op && (depth_op.scene == -1 || depth_op.scene == scene) {
                 match &depth_op.arg0 {
                     None => return Some(depth_op),
                     Some(c) => {
@@ -125,14 +127,45 @@ pub trait OperationSet {
         None
     }
     fn get_undepth_operations() -> Vec<ArgsTickflowOp>;
-    fn is_undepth_operation(op: RawTickflowOp) -> Option<ArgsTickflowOp> {
+    fn is_undepth_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
         for undepth_op in Self::get_undepth_operations() {
-            if op.op == undepth_op.op {
+            if op.op == undepth_op.op && (undepth_op.scene == -1 || undepth_op.scene == scene) {
                 match &undepth_op.arg0 {
                     None => return Some(undepth_op),
                     Some(c) => {
                         if op.arg0 == *c {
                             return Some(undepth_op);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+    fn get_scene_operation() -> ArgsTickflowOp;
+    fn is_scene_operation(op: &RawTickflowOp) -> Option<u8> {
+        let scene_op = Self::get_scene_operation();
+        if op.op == scene_op.op {
+            match &scene_op.arg0 {
+                None => return Some(scene_op.args[0].0),
+                Some(c) => {
+                    if op.arg0 == *c {
+                        return Some(scene_op.args[0].0);
+                    }
+                }
+            }
+        }
+        None
+    }
+    fn get_return_operations() -> Vec<ArgsTickflowOp>;
+    fn is_return_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
+        for return_op in Self::get_return_operations() {
+            if op.op == return_op.op && (return_op.scene == -1 || return_op.scene == scene) {
+                match &return_op.arg0 {
+                    None => return Some(return_op),
+                    Some(c) => {
+                        if op.arg0 == *c {
+                            return Some(return_op);
                         }
                     }
                 }
@@ -181,6 +214,12 @@ impl OperationSet for TickflowOp {
     }
     fn get_undepth_operations() -> Vec<ArgsTickflowOp> {
         vec![]
+    }
+    fn get_scene_operation() -> ArgsTickflowOp {
+        tf_op_args!(0)
+    }
+    fn get_return_operations() -> Vec<ArgsTickflowOp> {
+        vec![tf_op_args!(1)]
     }
 }
 
