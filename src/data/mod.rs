@@ -1,3 +1,6 @@
+pub mod macros;
+
+/// Data representation for Rhythm Heaven Megamix (3DS)
 pub mod megamix;
 
 /// Tickflow operation as decompiled, before parsing
@@ -13,6 +16,14 @@ pub struct TickflowOp {
     pub op: u16,
     pub arg0: Arg0,
     pub args: Vec<Arg>,
+    pub scene: i32,
+}
+
+/// Tickflow operation with specified args, for indicating which args indicate what in which operations
+pub struct ArgsTickflowOp {
+    pub op: u16,
+    pub arg0: Option<u32>,
+    pub args: Vec<(u8, bool)>,
     pub scene: i32,
 }
 
@@ -43,10 +54,92 @@ pub enum Array {
 
 pub struct Pointer(pub u32);
 
+/// Trait for every type of Tickflow operation.
+/// You can see implementations for Megamix (international), Fever, and DS in this library.
 pub trait OperationSet {
     fn get_operation(op: RawTickflowOp) -> Self
     where
         Self: Sized;
+    fn get_call_operations() -> Vec<ArgsTickflowOp>;
+    fn is_call_operation(op: RawTickflowOp) -> Option<ArgsTickflowOp> {
+        for call_op in Self::get_call_operations() {
+            if op.op == call_op.op {
+                match &call_op.arg0 {
+                    None => return Some(call_op),
+                    Some(c) => {
+                        if op.arg0 == *c {
+                            return Some(call_op);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+    fn get_string_operations() -> Vec<ArgsTickflowOp>;
+    fn is_string_operation(op: RawTickflowOp) -> Option<ArgsTickflowOp> {
+        for str_op in Self::get_string_operations() {
+            if op.op == str_op.op {
+                match &str_op.arg0 {
+                    None => return Some(str_op),
+                    Some(c) => {
+                        if op.arg0 == *c {
+                            return Some(str_op);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+    fn get_array_operations() -> Vec<ArgsTickflowOp>;
+    fn is_array_operation(op: RawTickflowOp) -> Option<ArgsTickflowOp> {
+        for array_op in Self::get_array_operations() {
+            if op.op == array_op.op {
+                match &array_op.arg0 {
+                    None => return Some(array_op),
+                    Some(c) => {
+                        if op.arg0 == *c {
+                            return Some(array_op);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+    fn get_depth_operations() -> Vec<ArgsTickflowOp>;
+    fn is_depth_operation(op: RawTickflowOp) -> Option<ArgsTickflowOp> {
+        for depth_op in Self::get_depth_operations() {
+            if op.op == depth_op.op {
+                match &depth_op.arg0 {
+                    None => return Some(depth_op),
+                    Some(c) => {
+                        if op.arg0 == *c {
+                            return Some(depth_op);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+    fn get_undepth_operations() -> Vec<ArgsTickflowOp>;
+    fn is_undepth_operation(op: RawTickflowOp) -> Option<ArgsTickflowOp> {
+        for undepth_op in Self::get_undepth_operations() {
+            if op.op == undepth_op.op {
+                match &undepth_op.arg0 {
+                    None => return Some(undepth_op),
+                    Some(c) => {
+                        if op.arg0 == *c {
+                            return Some(undepth_op);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
 }
 
 impl Arg {
@@ -73,6 +166,21 @@ impl From<RawTickflowOp> for TickflowOp {
 impl OperationSet for TickflowOp {
     fn get_operation(op: RawTickflowOp) -> Self {
         op.into()
+    }
+    fn get_call_operations() -> Vec<ArgsTickflowOp> {
+        vec![]
+    }
+    fn get_string_operations() -> Vec<ArgsTickflowOp> {
+        vec![]
+    }
+    fn get_array_operations() -> Vec<ArgsTickflowOp> {
+        vec![]
+    }
+    fn get_depth_operations() -> Vec<ArgsTickflowOp> {
+        vec![]
+    }
+    fn get_undepth_operations() -> Vec<ArgsTickflowOp> {
+        vec![]
     }
 }
 

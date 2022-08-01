@@ -1,4 +1,7 @@
-use crate::data::{OperationSet, Pointer, RawTickflowOp};
+use crate::{
+    data::{ArgsTickflowOp, OperationSet, Pointer, RawTickflowOp},
+    tf_op_args,
+};
 
 pub enum MegamixOp {
     CallSub {
@@ -116,5 +119,25 @@ impl OperationSet for MegamixOp {
             },
             (_, _, _) => Self::Other(op),
         }
+    }
+    fn get_call_operations() -> Vec<ArgsTickflowOp> {
+        vec![
+            tf_op_args!(0x1<1>, [(1),]),
+            tf_op_args!(0x2, [(0),]),
+            tf_op_args!(0x3<2>, [(0),]),
+            tf_op_args!(0x6, [(0),]),
+        ]
+    }
+    fn get_string_operations() -> Vec<ArgsTickflowOp> {
+        todo!();
+    }
+    fn get_array_operations() -> Vec<ArgsTickflowOp> {
+        todo!();
+    }
+    fn get_depth_operations() -> Vec<ArgsTickflowOp> {
+        todo!();
+    }
+    fn get_undepth_operations() -> Vec<ArgsTickflowOp> {
+        todo!();
     }
 }
