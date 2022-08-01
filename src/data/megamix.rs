@@ -1,10 +1,23 @@
-use super::{Pointer, TickflowOp};
+use crate::data::{OperationSet, Pointer, RawTickflowOp};
 
 pub enum MegamixOp {
-    CallSub(u32),
-    CallFunc(u32),
-    Call(Pointer),
-    SetFunc { func: u32, pos: Pointer },
+    CallSub {
+        sub: u32,
+        time: Option<u32>,
+        cat: Option<u32>,
+    },
+    CallFunc {
+        func: u32,
+        time: Option<u32>,
+    },
+    SetFunc {
+        func: u32,
+        pos: Pointer,
+    },
+    Call {
+        loc: Pointer,
+        time: Option<u32>,
+    },
     KillAll,
     KillCat(u32),
     KillLoc(Pointer),
@@ -20,7 +33,10 @@ pub enum MegamixOp {
     PushCondvar,
     PopCondvar,
     Rest(u32),
-    SetRest { slot: u32, amount: u32 },
+    SetRest {
+        slot: u32,
+        amount: u32,
+    },
     GetRest(u32),
     Delay(u32),
     RestReset,
@@ -47,10 +63,18 @@ pub enum MegamixOp {
     GetCountdown,
     DecCountdown,
     Tempo(u32),
-    TempoRel { factor: u32, lower: u32, upper: u32 },
+    TempoRel {
+        factor: u32,
+        lower: u32,
+        upper: u32,
+    },
     TempoID(u32),
     Speed(u32),
-    SpeedRel { factor: u32, lower: u32, upper: u32 },
+    SpeedRel {
+        factor: u32,
+        lower: u32,
+        upper: u32,
+    },
     Scene(u32),
     SceneDone,
     LoadStoredScene,
@@ -60,5 +84,37 @@ pub enum MegamixOp {
     IncSceneInitCounter(i32),
     UnrestSceneInitCounter,
 
-    Other(TickflowOp),
+    Other(RawTickflowOp),
+}
+
+//TODO: MissingRequiredArgument errors
+//TODO: finish this
+impl OperationSet for MegamixOp {
+    fn get_operation(op: RawTickflowOp) -> Self {
+        match (&op.op, &op.arg0, &op.scene) {
+            (0, 0, _) => Self::CallSub {
+                sub: *op.args.get(0).expect("Missing required argument"),
+                time: match op.args.get(1) {
+                    Some(&c) => Some(c),
+                    None => None,
+                },
+                cat: match op.args.get(2) {
+                    Some(&c) => Some(c),
+                    None => None,
+                },
+            },
+            (1, 0, _) => Self::CallFunc {
+                func: *op.args.get(0).expect("Missing required argument"),
+                time: match op.args.get(1) {
+                    Some(&c) => Some(c),
+                    None => None,
+                },
+            },
+            (1, 1, _) => Self::SetFunc {
+                func: *op.args.get(0).expect("Missing required argument"),
+                pos: (*op.args.get(1).expect("Missing required argument")).into(),
+            },
+            (_, _, _) => Self::Other(op),
+        }
+    }
 }
