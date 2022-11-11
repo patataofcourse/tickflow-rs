@@ -6,6 +6,7 @@ pub mod megamix;
 
 type Result<T> = std::io::Result<T>; //TODO: make my own error type
 
+#[derive(Debug)]
 enum Pointer {
     Tickflow { at: u32, points_to: u32 },
     String { at: u32, points_to: u32 },
@@ -38,7 +39,9 @@ pub fn extract<R: Read + Seek, T: OperationSet>(
             &mut bincmds,
             &mut bindata,
         )?);
+        pos += 1
     }
+    dbg!(bincmds, bindata, pointers);
     todo!();
 }
 
@@ -71,7 +74,15 @@ fn extract_tickflow_at<F: Read + Seek, T: OperationSet>(
             args: args.clone(),
             scene,
         };
+
+        //TODO: what if some operations are both? make sure that never happens,
+        //or offer an actual alternative
         if let Some(c) = T::is_scene_operation(&tf_op) {
+            println!(
+                "{:08X?}: {:08X?}",
+                queue[pos],
+                base_offset as u64 + file.stream_position()?
+            );
             scene = args[c as usize] as i32;
         } else if let Some(c) = T::is_call_operation(&tf_op, scene) {
             let pointer_pos = args[c.args[0].0 as usize];
@@ -107,16 +118,10 @@ fn extract_tickflow_at<F: Read + Seek, T: OperationSet>(
             }
         //TODO: check if array_op
         } else if let Some(_) = T::is_depth_operation(&tf_op, scene) {
-            #[allow(unused_assignments)]
-            {
-                depth += 1;
-            }
+            depth += 1;
         } else if let Some(_) = T::is_undepth_operation(&tf_op, scene) {
-            #[allow(unused_assignments)]
-            {
-                if depth > 0 {
-                    depth -= 1;
-                }
+            if depth > 0 {
+                depth -= 1;
             }
         } else if let Some(_) = T::is_return_operation(&tf_op, scene) {
             if depth <= 0 {

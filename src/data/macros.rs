@@ -1,6 +1,6 @@
 #[macro_export]
 macro_rules! tf_op_args {
-    ($cmdname:literal $(<$arg0:literal>)?, [$(($argnum:literal$(, $special:literal)?),)*] $(, $scene:literal)? $(,)?) => {
+    ($cmdname:literal $(<$arg0:literal>)?, [$(($argnum:literal$(, $special:literal)?)),* $(,)?] $(, $scene:literal)? $(,)?) => {
         {
         #[allow(unused_mut, unused_assignments)]
         let mut arg0 = None;
@@ -15,7 +15,7 @@ macro_rules! tf_op_args {
         $(
             #[allow(unused_mut)]
             let mut val = ($argnum, false);
-            $(val.1 = $special)?
+            $(val.1 = $special;)?
             args.push(val);
         )*
 

@@ -6,6 +6,7 @@ pub mod macros;
 pub mod megamix;
 
 /// Tickflow operation as decompiled, before parsing
+#[derive(Debug)]
 pub struct RawTickflowOp {
     pub op: u16,
     pub arg0: u32,
@@ -14,6 +15,7 @@ pub struct RawTickflowOp {
 }
 
 /// Tickflow operation ready for compilation
+#[derive(Debug)]
 pub struct TickflowOp {
     pub op: u16,
     pub arg0: Arg0,
@@ -22,6 +24,7 @@ pub struct TickflowOp {
 }
 
 /// Tickflow operation with specified args, for indicating which args indicate what in which operations
+#[derive(Debug)]
 pub struct ArgsTickflowOp {
     pub op: u16,
     pub arg0: Option<u32>,
@@ -29,12 +32,14 @@ pub struct ArgsTickflowOp {
     pub scene: i32,
 }
 
+#[derive(Debug)]
 pub enum Arg0 {
     Signed(i32),
     Unsigned(u32),
     Unknown(u32),
 }
 
+#[derive(Debug)]
 pub enum Arg {
     Signed(i32),
     Unsigned(u32),
@@ -45,6 +50,7 @@ pub enum Arg {
     Unknown(u32),
 }
 
+#[derive(Debug)]
 pub enum Array {
     Word(Vec<u32>),
     SignedWord(Vec<i32>),
@@ -54,11 +60,17 @@ pub enum Array {
     SignedHalf(Vec<i16>),
 }
 
-pub struct Pointer(pub u32);
+#[derive(Debug)]
+pub enum Pointer {
+    Raw(u32),
+    Label(String),
+}
 
 /// Trait for every type of Tickflow operation.
 /// You can see implementations for Megamix (international), Fever, and DS in this library.
 pub trait OperationSet {
+    const BTKS_TICKFLOW_TYPE: u32;
+
     fn get_operation(op: RawTickflowOp) -> Self
     where
         Self: Sized;
@@ -197,6 +209,8 @@ impl From<RawTickflowOp> for TickflowOp {
 }
 
 impl OperationSet for TickflowOp {
+    const BTKS_TICKFLOW_TYPE: u32 = u32::MAX;
+
     fn get_operation(op: RawTickflowOp) -> Self {
         op.into()
     }
@@ -297,12 +311,12 @@ impl From<i32> for Arg0 {
 
 impl From<i32> for Pointer {
     fn from(int: i32) -> Self {
-        Self(int as u32)
+        Self::Raw(int as u32)
     }
 }
 
 impl From<u32> for Pointer {
     fn from(int: u32) -> Self {
-        Self(int)
+        Self::Raw(int)
     }
 }
