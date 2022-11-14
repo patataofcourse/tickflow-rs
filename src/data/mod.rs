@@ -9,6 +9,8 @@ pub mod gold;
 /// Data representation for Rhythm Heaven Megamix (3DS)
 pub mod megamix;
 
+use btks::BtksType;
+
 /// Tickflow operation as decompiled, before parsing
 #[derive(Debug, Clone)]
 pub struct RawTickflowOp {
@@ -73,7 +75,7 @@ pub enum Pointer {
 /// Trait for every type of Tickflow operation.
 /// You can see implementations for Megamix (international), Fever, and DS in this library.
 pub trait OperationSet {
-    const BTKS_TICKFLOW_TYPE: u32;
+    const BTKS_TICKFLOW_TYPE: BtksType;
 
     fn get_operation(op: RawTickflowOp) -> Self
     where
@@ -213,7 +215,7 @@ impl From<RawTickflowOp> for TickflowOp {
 }
 
 impl OperationSet for TickflowOp {
-    const BTKS_TICKFLOW_TYPE: u32 = u32::MAX;
+    const BTKS_TICKFLOW_TYPE: BtksType = BtksType::Unspecified;
 
     fn get_operation(op: RawTickflowOp) -> Self {
         op.into()

@@ -1,5 +1,5 @@
 use crate::{
-    data::{ArgsTickflowOp, OperationSet, Pointer, RawTickflowOp},
+    data::{btks::BtksType, ArgsTickflowOp, OperationSet, Pointer, RawTickflowOp},
     tf_op_args,
 };
 
@@ -90,7 +90,7 @@ pub enum MegamixOp {
     Other(RawTickflowOp),
 }
 impl OperationSet for MegamixOp {
-    const BTKS_TICKFLOW_TYPE: u32 = 0;
+    const BTKS_TICKFLOW_TYPE: BtksType = BtksType::MegamixIntl;
 
     //TODO: MissingRequiredArgument errors
     //TODO: finish this

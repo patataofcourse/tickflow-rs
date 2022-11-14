@@ -8,7 +8,7 @@ pub mod megamix;
 type Result<T> = std::io::Result<T>; //TODO: make my own error type
 
 #[derive(Debug)]
-enum Pointer {
+pub enum Pointer {
     Tickflow { at: u32, points_to: u32 },
     String { at: u32, points_to: u32 },
     Array { at: u32, points_to: u32 },
