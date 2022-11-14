@@ -1,3 +1,12 @@
+pub const CODE_OFFSET: u32 = 0x00100000;
+
+pub enum Region {
+    JP,
+    US,
+    EU,
+    KR,
+}
+
 type NamedLocations = &'static [(&'static str, u32)];
 
 struct MegamixLocations {

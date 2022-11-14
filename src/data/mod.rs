@@ -2,13 +2,15 @@ use crate::tf_op_args;
 
 pub mod macros;
 
+/// Data representation for the BTKS (Binary Tickflow Specification) file format
+pub mod btks;
 /// Data representation for Rhythm Heaven (NDS)
 pub mod gold;
 /// Data representation for Rhythm Heaven Megamix (3DS)
 pub mod megamix;
 
 /// Tickflow operation as decompiled, before parsing
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RawTickflowOp {
     pub op: u16,
     pub arg0: u32,
@@ -17,7 +19,7 @@ pub struct RawTickflowOp {
 }
 
 /// Tickflow operation ready for compilation
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TickflowOp {
     pub op: u16,
     pub arg0: Arg0,
@@ -26,7 +28,7 @@ pub struct TickflowOp {
 }
 
 /// Tickflow operation with specified args, for indicating which args indicate what in which operations
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ArgsTickflowOp {
     pub op: u16,
     pub arg0: Option<u32>,
@@ -34,14 +36,14 @@ pub struct ArgsTickflowOp {
     pub scene: i32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Arg0 {
     Signed(i32),
     Unsigned(u32),
     Unknown(u32),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Arg {
     Signed(i32),
     Unsigned(u32),
@@ -52,7 +54,7 @@ pub enum Arg {
     Unknown(u32),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Array {
     Word(Vec<u32>),
     SignedWord(Vec<i32>),
@@ -62,7 +64,7 @@ pub enum Array {
     SignedHalf(Vec<i16>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Pointer {
     Raw(u32),
     Label(String),

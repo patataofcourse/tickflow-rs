@@ -1,4 +1,4 @@
-use crate::data::{OperationSet, RawTickflowOp};
+use crate::data::{btks::BTKS, OperationSet, RawTickflowOp};
 use bytestream::*;
 use std::io::{Read, Seek, SeekFrom};
 
@@ -18,7 +18,7 @@ pub fn extract<T: OperationSet>(
     file: &mut (impl Read + Seek),
     base_offset: u32,
     start_queue: Vec<u32>,
-) -> Result<Vec<T>> {
+) -> Result<BTKS> {
     let mut func_order = vec![];
     let mut func_positions = vec![];
     let mut queue = vec![];

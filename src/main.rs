@@ -1,10 +1,15 @@
-fn main() -> std::io::Result<()> {
-    let mut f = std::fs::File::open("test_files/code.bin")?;
+use std::{fs::File, io::Result};
+use tickflow_rs::{
+    data::{gold::GoldOp, megamix::MegamixOp},
+    extract::{self, gold::TICKOVY_OFFSET_US, megamix::CODE_OFFSET},
+};
 
-    tickflow_rs::extract::extract::<tickflow_rs::data::megamix::MegamixOp>(
-        &mut f,
-        0x00100000,
-        vec![0x0039a974],
-    )?;
+fn main() -> Result<()> {
+    let mut f = File::open("test_files/code.bin")?;
+    extract::extract::<MegamixOp>(&mut f, CODE_OFFSET, vec![0x0039a974])?;
+
+    let mut f = File::open("test_files/ovy9_90.bin")?;
+    extract::extract::<GoldOp>(&mut f, TICKOVY_OFFSET_US, vec![todo!()])?;
+
     Ok(())
 }
