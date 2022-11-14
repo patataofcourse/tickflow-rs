@@ -2,6 +2,8 @@ use crate::tf_op_args;
 
 pub mod macros;
 
+/// Data representation for Rhythm Heaven (NDS)
+pub mod gold;
 /// Data representation for Rhythm Heaven Megamix (3DS)
 pub mod megamix;
 
@@ -28,7 +30,7 @@ pub struct TickflowOp {
 pub struct ArgsTickflowOp {
     pub op: u16,
     pub arg0: Option<u32>,
-    pub args: Vec<(u8, bool)>,
+    pub args: Vec<(i8, bool)>,
     pub scene: i32,
 }
 
@@ -155,7 +157,7 @@ pub trait OperationSet {
         None
     }
     fn get_scene_operation() -> ArgsTickflowOp;
-    fn is_scene_operation(op: &RawTickflowOp) -> Option<u8> {
+    fn is_scene_operation(op: &RawTickflowOp) -> Option<i8> {
         let scene_op = Self::get_scene_operation();
         if op.op == scene_op.op {
             match &scene_op.arg0 {

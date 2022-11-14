@@ -2,6 +2,7 @@ use crate::data::{OperationSet, RawTickflowOp};
 use bytestream::*;
 use std::io::{Read, Seek, SeekFrom};
 
+pub mod gold;
 pub mod megamix;
 
 type Result<T> = std::io::Result<T>; //TODO: make my own error type
@@ -78,7 +79,7 @@ fn extract_tickflow_at<T: OperationSet>(
         //TODO: what if some operations are both? make sure that never happens,
         //or offer an actual alternative
         if let Some(c) = T::is_scene_operation(&tf_op) {
-            scene = args[c as usize] as i32;
+            scene = if c == -1 { arg0 } else { args[c as usize] } as i32;
         } else if let Some(c) = T::is_call_operation(&tf_op, scene) {
             let pointer_pos = args[c.args[0].0 as usize];
             let mut is_in_queue = false;
