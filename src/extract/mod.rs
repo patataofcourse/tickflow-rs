@@ -13,8 +13,8 @@ enum Pointer {
     Array { at: u32, points_to: u32 },
 }
 
-pub fn extract<R: Read + Seek, T: OperationSet>(
-    file: &mut R,
+pub fn extract<T: OperationSet>(
+    file: &mut (impl Read + Seek),
     base_offset: u32,
     start_queue: Vec<u32>,
 ) -> Result<Vec<T>> {
@@ -31,7 +31,7 @@ pub fn extract<R: Read + Seek, T: OperationSet>(
     while pos < queue.len() {
         func_order.push(queue[pos].0 - base_offset);
         func_positions.push(bindata.len());
-        pointers.extend(extract_tickflow_at::<R, T>(
+        pointers.extend(extract_tickflow_at::<T>(
             base_offset,
             file,
             &mut queue,
@@ -46,9 +46,9 @@ pub fn extract<R: Read + Seek, T: OperationSet>(
 }
 
 /// Equivalent to Tickompiler's firstPass
-fn extract_tickflow_at<F: Read + Seek, T: OperationSet>(
+fn extract_tickflow_at<T: OperationSet>(
     base_offset: u32,
-    file: &mut F,
+    file: &mut (impl Read + Seek),
     queue: &mut Vec<(u32, i32)>,
     pos: usize,
     bincmds: &mut Vec<u8>,
