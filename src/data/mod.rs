@@ -92,7 +92,7 @@ pub trait OperationSet {
     }
     fn get_string_operations() -> Vec<ArgsTickflowOp>;
     fn is_string_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
-        for return_op in Self::get_return_operations() {
+        for return_op in Self::get_string_operations() {
             if op.op == return_op.op && (return_op.scene == -1 || return_op.scene == scene) {
                 match &return_op.arg0 {
                     None => return Some(return_op),

@@ -78,11 +78,6 @@ fn extract_tickflow_at<F: Read + Seek, T: OperationSet>(
         //TODO: what if some operations are both? make sure that never happens,
         //or offer an actual alternative
         if let Some(c) = T::is_scene_operation(&tf_op) {
-            println!(
-                "{:08X?}: {:08X?}",
-                queue[pos],
-                base_offset as u64 + file.stream_position()?
-            );
             scene = args[c as usize] as i32;
         } else if let Some(c) = T::is_call_operation(&tf_op, scene) {
             let pointer_pos = args[c.args[0].0 as usize];
