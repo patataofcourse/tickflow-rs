@@ -7,6 +7,10 @@ pub enum Region {
     KR,
 }
 
+pub fn extract_games_from_code(region: Region) {
+    todo!();
+}
+
 // TODO: check for differences in JP
 #[repr(u8)]
 pub enum Scene {
@@ -47,84 +51,82 @@ pub enum Scene {
 
     // Fever
     RvlAssemble = 0x1C,
-    /*
-    0x1D - Air Rally
-    0x1E - Exhibition Match
-    0x1F - Flock Step
-    0x20 - Cheer Readers
-    0x21 - Double Date
-    0x22 - Catch of the Day
-    0x23 - Micro-Row
-    0x24 - Fork Lifter
-    0x25 - Hole in One
-    0x26 - Flipper-Flop
-    0x27 - Ringside
-    0x28 - Karate Man
-    0x29 - Working Dough
-    0x2A - Figure Fighter
-    0x2B - Love Rap
-    0x2C - Bossa Nova
-    0x2D - Screwbot Factory
-    0x2E - Launch Party
-    0x2F - Board Meeting
-    0x30 - Samurai Slice
-    0x31 - See-Saw
-    0x32 - Packing Pests
-    0x33 - Monkey Watch
+    RvlBadminton = 0x1D,
+    RvlBatting = 0x1E,
+    RvlBird = 0x1F,
+    RvlBook = 0x20,
+    RvlDate = 0x21,
+    RvlFishing = 0x22,
+    RvlFlea = 0x23,
+    RvlFork = 0x24,
+    RvlGolf = 0x25,
+    RvlGoma = 0x26,
+    RvlInterview = 0x27,
+    RvlKarate = 0x28,
+    RvlManju = 0x29,
+    RvlMuscle = 0x2A,
+    RvlRap = 0x2B,
+    RvlRecieve = 0x2C,
+    RvlRobot = 0x2D,
+    RvlRocket = 0x2E,
+    RvlRotation = 0x2F,
+    RvlSamurai = 0x30,
+    RvlSeesaw = 0x31,
+    RvlSort = 0x32,
+    RvlWatch = 0x33,
 
     // Megamix
-    0x34 - Blue Bear
-    0x35 - Animal Acrobat
-    0x36 - Tongue Lashing
-    0x37 - Super Samurai Slice
-    0x38 - Fruit Basket
-    0x39 - Second Contact
-    0x3A - Pajama Party
-    0x3B - Catchy Tune
-    0x3C - Sumo Brothers
-    0x3D - Tangotronic 3000
-    0x3E - Kitties!
-    0x3F - LumBEARjack
+    CtrBear = 0x34,
+    CtrBlanco = 0x35,
+    CtrChameleon = 0x36,
+    CtrDotSamurai = 0x37,
+    CtrFruitbasket = 0x38,
+    CtrInterpreter = 0x39,
+    CtrPillow = 0x3A,
+    CtrStep = 0x3B,
+    CtrSumou = 0x3C,
+    CtrTango = 0x3D,
+    CtrTeppan = 0x3E,
+    CtrWoodCat = 0x3F,
 
     // Endless
-    0x40 - Sick Beats
-    0x41 - Coin Toss
-    0x42 - Clap Trap
-    0x43 - Charging Chicken
+    AgbVirus = 0x40,
+    NtrCoinToss = 0x41,
+    RvlSword = 0x42,
+    CtrChicken = 0x43,
 
     // Misc
-    0x44 - ???
-    0x45 - Corrupt Save Handler
-    0x46 - Title Screen
-    0x47 - Game Select (Land)
-    0x48 - Game Select (Tower)
-    0x49 - Prologue
-    0x4A - Epilogue
-    0x4B - Opening
-    0x4C - Farewell/To Heaven World
-    0x4D - Gameplay Counts
-    0x4E - Letter After MED
-    0x4F - Introduction
-    0x50 - Goat Stable
-    0x51 - Café
-    0x52 - Shop
-    0x53 - Museum
-    0x54 - Badges
-    0x55 - Memories
-    0x56 - Mascots
-    0x57 - Epilogue Slideshow
-    0x58 - Streetpass Terrace/Figure Fighter VS
-    0x59 - Challenge Land
-    0x5A - Challenge Train
-    0x5B - Challenge Train Results (Score Goal)
-    0x5C - Challenge Train Results (Lofe Goal)
-    0x5D - Challenge Train Results (Monster Goal)
-    0x5E - Challenge Land (Course Select)
-    */
+    Unk44 = 0x44,
+    CorruptSaveHandler = 0x45,
+    Title = 0x46,
+    Map = 0x47,
+    Tower = 0x48,
+    Prologue = 0x49,
+    Epilogue = 0x4A,
+    Intro = 0x4B,
+    Farewell = 0x4C,
+    GameCount = 0x4D,
+    LetterMED = 0x4E,
+    Tutorial = 0x4F,
+    Goat = 0x50,
+    Cafe = 0x51,
+    Shop = 0x52,
+    Museum = 0x53,
+    Badges = 0x54,
+    Memories = 0x55,
+    Mascots = 0x56,
+    Slideshow = 0x57,
+    StreetPass = 0x58,
+    ChallengeLand = 0x59,
+    ChallengeTrain = 0x5A,
+    ChallengeResultScore = 0x5B,
+    ChallengeResultLife = 0x5C,
+    ChallengeResultMonster = 0x5D,
+    ChallengeCourseSelect = 0x5E,
     Unk5F = 0x5F,
-    Dlp = 0x60,
+    DownloadPlay = 0x60,
     DemoUnk61 = 0x61,
-    DemoThankYou = 0x62,
+    DemoMessage = 0x62,
 }
 
 impl Scene {
@@ -166,7 +168,7 @@ const LOCATIONS_US: MegamixLocations = MegamixLocations {
         ("ctrFruitbasket_short", 0x3ee7d8),
         ("ctrInterpreter_short", 0x3f2380),
         ("ctrStep_short", 0x3f7b60),
-        ("ctrWoodcat_short", 0x403c94),
+        ("ctrWoodCat_short", 0x403c94),
 
         // Tengoku - standard games
         ("agbBatter_long", 0x39a43c),
@@ -304,7 +306,3 @@ const LOCATIONS_US: MegamixLocations = MegamixLocations {
     subs: &[],
     misc: &[],
 };
-
-pub fn extract_games_from_code(region: Region) {
-    todo!();
-}
