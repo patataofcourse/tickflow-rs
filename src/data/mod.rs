@@ -10,6 +10,7 @@ pub mod gold;
 pub mod megamix;
 
 use btks::BtksType;
+use bytestream::ByteOrder;
 
 /// Tickflow operation as decompiled, before parsing
 #[derive(Debug, Clone)]
@@ -76,6 +77,9 @@ pub enum Pointer {
 /// You can see implementations for Megamix (international), Fever, and DS in this library.
 pub trait OperationSet {
     const BTKS_TICKFLOW_TYPE: BtksType;
+    const ENDIAN: ByteOrder;
+
+    //TODO: tempo operations, sub operations
 
     fn get_operation(op: RawTickflowOp) -> Self
     where
@@ -216,6 +220,7 @@ impl From<RawTickflowOp> for TickflowOp {
 
 impl OperationSet for TickflowOp {
     const BTKS_TICKFLOW_TYPE: BtksType = BtksType::Unspecified;
+    const ENDIAN: ByteOrder = ByteOrder::LittleEndian;
 
     fn get_operation(op: RawTickflowOp) -> Self {
         op.into()

@@ -1,3 +1,5 @@
+use bytestream::ByteOrder;
+
 use crate::{
     data::{btks::BtksType, ArgsTickflowOp, OperationSet, Pointer, RawTickflowOp},
     tf_op_args,
@@ -91,6 +93,7 @@ pub enum MegamixOp {
 }
 impl OperationSet for MegamixOp {
     const BTKS_TICKFLOW_TYPE: BtksType = BtksType::MegamixIntl;
+    const ENDIAN: ByteOrder = ByteOrder::LittleEndian;
 
     //TODO: MissingRequiredArgument errors
     //TODO: finish this

@@ -1,3 +1,5 @@
+use bytestream::ByteOrder;
+
 use crate::{
     data::{btks::BtksType, ArgsTickflowOp, OperationSet, RawTickflowOp},
     tf_op_args,
@@ -9,6 +11,7 @@ pub enum GoldOp {
 
 impl OperationSet for GoldOp {
     const BTKS_TICKFLOW_TYPE: BtksType = BtksType::Gold;
+    const ENDIAN: ByteOrder = ByteOrder::LittleEndian;
 
     fn get_operation(op: RawTickflowOp) -> Self
     where

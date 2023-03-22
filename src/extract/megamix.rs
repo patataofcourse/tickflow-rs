@@ -136,15 +136,15 @@ impl Scene {
 
 type NamedLocations = &'static [(&'static str, u32)];
 
-struct MegamixLocations {
-    games: NamedLocations,
-    gates: NamedLocations,
-    gate_practices: NamedLocations,
-    subs: NamedLocations, //HashMap? maybe with lazy_static?
-    misc: NamedLocations,
+pub struct MegamixLocations {
+    pub games: NamedLocations,
+    pub gates: NamedLocations,
+    pub gate_practices: NamedLocations,
+    pub subs: NamedLocations, //HashMap? maybe with lazy_static?
+    pub misc: NamedLocations,
 }
 
-const LOCATIONS_US: MegamixLocations = MegamixLocations {
+pub const LOCATIONS_US: MegamixLocations = MegamixLocations {
     #[rustfmt::skip]
     games: &[
         // Tengoku - prequels
