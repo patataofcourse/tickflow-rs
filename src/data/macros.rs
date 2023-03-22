@@ -22,7 +22,7 @@ macro_rules! tf_op_args {
         $crate::data::ArgsTickflowOp {
             op: $cmdname,
             arg0,
-            args: args,
+            args,
             scene,
             }
         }

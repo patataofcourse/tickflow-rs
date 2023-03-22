@@ -113,16 +113,14 @@ fn extract_tickflow_at<T: OperationSet>(
                 )?);
             }
         //TODO: check if array_op
-        } else if let Some(_) = T::is_depth_operation(&tf_op, scene) {
+        } else if T::is_depth_operation(&tf_op, scene).is_some() {
             depth += 1;
-        } else if let Some(_) = T::is_undepth_operation(&tf_op, scene) {
+        } else if T::is_undepth_operation(&tf_op, scene).is_some() {
             if depth > 0 {
                 depth -= 1;
             }
-        } else if let Some(_) = T::is_return_operation(&tf_op, scene) {
-            if depth <= 0 {
-                done = true;
-            }
+        } else if T::is_return_operation(&tf_op, scene).is_some() && depth <= 0 {
+            done = true;
         }
         op_int.write_to(bincmds, ByteOrder::LittleEndian)?;
         for arg in args {
@@ -164,9 +162,7 @@ fn read_string<F: Read + Seek>(
     }
 
     //padding
-    for _ in 0..(4 - string_data.len() % 4) {
-        string_data.push(0);
-    }
+    string_data.extend(vec![0; 4 - string_data.len() % 4]);
 
     file.seek(SeekFrom::Start(og_pos))?;
     Ok(string_data)

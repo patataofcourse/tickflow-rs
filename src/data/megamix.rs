@@ -97,25 +97,16 @@ impl OperationSet for MegamixOp {
     fn get_operation(op: RawTickflowOp) -> Self {
         match (&op.op, &op.arg0, &op.scene) {
             (0, 0, _) => Self::CallSub {
-                sub: *op.args.get(0).expect("Missing required argument"),
-                time: match op.args.get(1) {
-                    Some(&c) => Some(c),
-                    None => None,
-                },
-                cat: match op.args.get(2) {
-                    Some(&c) => Some(c),
-                    None => None,
-                },
+                sub: *op.args.first().expect("Missing required argument"),
+                time: op.args.get(1).copied(),
+                cat: op.args.get(2).copied(),
             },
             (1, 0, _) => Self::CallFunc {
-                func: *op.args.get(0).expect("Missing required argument"),
-                time: match op.args.get(1) {
-                    Some(&c) => Some(c),
-                    None => None,
-                },
+                func: *op.args.first().expect("Missing required argument"),
+                time: op.args.get(1).copied(),
             },
             (1, 1, _) => Self::SetFunc {
-                func: *op.args.get(0).expect("Missing required argument"),
+                func: *op.args.first().expect("Missing required argument"),
                 pos: (*op.args.get(1).expect("Missing required argument")).into(),
             },
             (_, _, _) => Self::Other(op),

@@ -208,7 +208,7 @@ impl From<RawTickflowOp> for TickflowOp {
         TickflowOp {
             op: op.op,
             arg0: Arg0::Unknown(op.arg0),
-            args: args,
+            args,
             scene: op.scene,
         }
     }
@@ -281,7 +281,7 @@ impl From<Vec<i8>> for Array {
 
 impl From<Array> for Arg {
     fn from(array: Array) -> Self {
-        Self::Array(array.into())
+        Self::Array(array)
     }
 }
 
