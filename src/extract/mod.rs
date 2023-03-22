@@ -7,7 +7,7 @@ pub mod megamix;
 
 type Result<T> = std::io::Result<T>; //TODO: make my own error type
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Pointer {
     Tickflow { at: u32, points_to: u32 },
     String { at: u32, points_to: u32 },
@@ -63,7 +63,7 @@ fn extract_tickflow_at<T: OperationSet>(
     while !done {
         let op_int = u32::read_from(file, ByteOrder::LittleEndian)?;
         let op = (op_int & 0x3FF) as u16;
-        let arg0 = op_int >> 0x18;
+        let arg0 = op_int >> 14;
         let arg_count = ((op_int & 0x3C00) >> 10) as u8;
         let mut args = vec![];
         for _ in 0..arg_count {
@@ -76,17 +76,17 @@ fn extract_tickflow_at<T: OperationSet>(
             scene,
         };
 
-        //TODO: what if some operations are both? make sure that never happens,
+        //TODO: what if some operations are multiple? make sure that never happens,
         //or offer an actual alternative
         if let Some(c) = T::is_scene_operation(&tf_op) {
             scene = if c == -1 { arg0 } else { args[c as usize] } as i32;
         } else if let Some(c) = T::is_call_operation(&tf_op, scene) {
             let pointer_pos = args[c.args[0].0 as usize];
             let mut is_in_queue = false;
-            for (position, _) in &*queue {
+            'found: for (position, _) in &*queue {
                 if *position == pointer_pos {
                     is_in_queue = true;
-                    break;
+                    break 'found;
                 }
             }
             if !is_in_queue {
@@ -162,7 +162,7 @@ fn read_string<F: Read + Seek>(
     }
 
     //padding
-    string_data.extend(vec![0; 4 - string_data.len() % 4]);
+    string_data.extend(vec![0; 4 - string_data.len() % 4]); //TODO: is this needed anymore?
 
     file.seek(SeekFrom::Start(og_pos))?;
     Ok(string_data)
