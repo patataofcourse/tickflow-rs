@@ -66,7 +66,7 @@ pub fn extract<T: OperationSet>(
     }
 
     for pointer in &pointers {
-        bindata.splice(pointer.at..pointer.at + 4, pointer.points_to.to_le_bytes());
+        bincmds.splice(pointer.at..pointer.at + 4, pointer.points_to.to_le_bytes());
     }
 
     // TODO: tempos
@@ -148,7 +148,7 @@ fn extract_tickflow_at<T: OperationSet>(
         } else if let Some(c) = T::is_string_operation(&tf_op, scene) {
             for arg in &c.args {
                 pointers.push(Pointer {
-                    at: bindata.len() + (4 * (arg.0 + 1)) as usize,
+                    at: bincmds.len() + (4 * (arg.0 + 1)) as usize,
                     points_to: bindata.len() as u32,
                     ptype: PointerType::Data,
                 });
