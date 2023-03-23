@@ -3,7 +3,10 @@ use crate::data::{
     OperationSet, RawTickflowOp,
 };
 use bytestream::{ByteOrder, StreamReader, StreamWriter};
-use std::io::{Read, Seek, SeekFrom};
+use std::{
+    collections::HashMap,
+    io::{Read, Seek, SeekFrom},
+};
 
 pub mod gold;
 pub mod megamix;
@@ -20,7 +23,7 @@ pub struct Pointer {
 impl Pointer {
     pub fn as_ptro(&self) -> [u8; 5] {
         let mut out = [0; 5];
-        out[..4].copy_from_slice(&self.points_to.to_le_bytes());
+        out[..4].copy_from_slice(&self.at.to_le_bytes());
         out[4] = self.ptype as u8;
         out
     }
@@ -40,8 +43,7 @@ pub fn extract<T: OperationSet>(
     //TODO: proper error instead of panic if start_queue is empty
     let start_offset = start_queue[0];
 
-    let mut func_order = vec![];
-    let mut func_positions = vec![];
+    let mut functions = HashMap::new();
     let mut queue = vec![];
     for pos in start_queue {
         queue.push((*pos, -1));
@@ -52,8 +54,7 @@ pub fn extract<T: OperationSet>(
     let mut pos = 0;
     while pos < queue.len() {
         //TODO: hashmap? btreemap?
-        func_order.push(queue[pos].0 - base_offset);
-        func_positions.push(bindata.len());
+        functions.insert(queue[pos].0 - base_offset, bindata.len() as u32);
         pointers.extend(extract_tickflow_at::<T>(
             base_offset,
             file,
@@ -67,16 +68,15 @@ pub fn extract<T: OperationSet>(
     }
 
     for pointer in &pointers {
-        if pointer.ptype == PointerType::Tickflow {
-            let pos_in_bindata = func_order
-                .iter()
-                .position(|x| *x == pointer.points_to)
-                .unwrap();
-            let points_to = func_positions[pos_in_bindata];
-            bincmds.splice(pointer.at..pointer.at + 4, points_to.to_le_bytes());
-        } else {
-            bincmds.splice(pointer.at..pointer.at + 4, pointer.points_to.to_le_bytes());
-        }
+        bincmds.splice(
+            pointer.at..pointer.at + 4,
+            if pointer.ptype == PointerType::Tickflow {
+                functions[&pointer.points_to]
+            } else {
+                pointer.points_to
+            }
+            .to_le_bytes(),
+        );
     }
 
     // TODO: tempos

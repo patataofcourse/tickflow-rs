@@ -14,8 +14,8 @@ fn main() -> Result<()> {
     let mut fw = File::create(format!("test_files/{}.btk", MEGAMIX_NAME))?;
     btks.to_btks_file(&mut fw, MegamixOp::ENDIAN)?;
 
-    let mut f = File::open("test_files/ovy9_90.bin")?;
-    extract::extract::<GoldOp>(&mut f, TICKOVY_OFFSET_US, &[])?;
+    //let mut f = File::open("test_files/ovy9_90.bin")?;
+    //extract::extract::<GoldOp>(&mut f, TICKOVY_OFFSET_US, &[])?;
 
     Ok(())
 }
