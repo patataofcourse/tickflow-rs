@@ -26,7 +26,7 @@ impl Pointer {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PointerType {
     Tickflow,
     Data,
@@ -51,6 +51,7 @@ pub fn extract<T: OperationSet>(
     let mut pointers = vec![];
     let mut pos = 0;
     while pos < queue.len() {
+        //TODO: hashmap? btreemap?
         func_order.push(queue[pos].0 - base_offset);
         func_positions.push(bindata.len());
         pointers.extend(extract_tickflow_at::<T>(
@@ -66,7 +67,16 @@ pub fn extract<T: OperationSet>(
     }
 
     for pointer in &pointers {
-        bincmds.splice(pointer.at..pointer.at + 4, pointer.points_to.to_le_bytes());
+        if pointer.ptype == PointerType::Tickflow {
+            let pos_in_bindata = func_order
+                .iter()
+                .position(|x| *x == pointer.points_to)
+                .unwrap();
+            let points_to = func_positions[pos_in_bindata];
+            bincmds.splice(pointer.at..pointer.at + 4, points_to.to_le_bytes());
+        } else {
+            bincmds.splice(pointer.at..pointer.at + 4, pointer.points_to.to_le_bytes());
+        }
     }
 
     // TODO: tempos
