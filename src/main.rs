@@ -5,6 +5,7 @@ use tickflow_rs::{
 };
 
 const MEGAMIX_GAME: usize = 0;
+
 const MEGAMIX_POS: u32 = extract::megamix::LOCATIONS_US.games[MEGAMIX_GAME].1;
 const MEGAMIX_NAME: &str = extract::megamix::LOCATIONS_US.games[MEGAMIX_GAME].0;
 

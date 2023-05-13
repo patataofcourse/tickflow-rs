@@ -10,7 +10,7 @@ pub struct BTKS {
     pub flow: FlowSection,
     pub ptro: Option<Vec<Pointer>>,
     pub tmpo: Option<Vec<Tempo>>,
-    pub strd: Option<Vec<u8>>,
+    pub strd: Vec<u8>,
 }
 
 #[derive(Debug, Clone)]
@@ -59,7 +59,7 @@ impl BTKS {
         // ------------
         f.write_all(b"BTKS")?; //magic
         let mut size = Self::HEADER_SIZE;
-        let mut num_sections = 1;
+        let mut num_sections = 2;
         let size_pos = f.stream_position()?;
         0u32.write_to(f, endian)?;
         Self::REVISION.write_to(f, endian)?;
@@ -113,14 +113,11 @@ impl BTKS {
         // ----------
         //    STRD
         // ----------
-        if let Some(c) = &self.strd {
-            num_sections += 1;
-            f.write_all(b"STRD")?; //magic
-            let strd_size: u32 = Self::STRD_HEADER + c.len() as u32;
-            size += strd_size;
-            strd_size.write_to(f, endian)?;
-            f.write_all(c)?;
-        }
+        f.write_all(b"STRD")?; //magic
+        let strd_size: u32 = Self::STRD_HEADER + self.strd.len() as u32;
+        size += strd_size;
+        strd_size.write_to(f, endian)?;
+        f.write_all(&self.strd)?;
 
         // Write filesize and number of sections
         f.seek(SeekFrom::Start(size_pos))?;

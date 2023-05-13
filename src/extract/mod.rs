@@ -23,7 +23,7 @@ pub struct Pointer {
 impl Pointer {
     pub fn as_ptro(&self) -> [u8; 5] {
         let mut out = [0; 5];
-        out[..4].copy_from_slice(&self.at.to_le_bytes());
+        out[..4].copy_from_slice(&(self.at as u32).to_le_bytes());
         out[4] = self.ptype as u8;
         out
     }
@@ -92,11 +92,7 @@ pub fn extract<T: OperationSet>(
         } else {
             Some(pointers)
         },
-        strd: if bindata.is_empty() {
-            None
-        } else {
-            Some(bindata)
-        },
+        strd: bindata,
         tmpo: None,
     })
 }

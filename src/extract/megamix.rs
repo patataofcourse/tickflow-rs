@@ -7,15 +7,15 @@ pub enum Region {
     KR,
 }
 
-pub fn extract_games_from_code(region: Region) {
+pub fn extract_tickflow_from_code(region: Region) {
     todo!();
 }
 
 // TODO: check for differences in JP
-#[repr(u8)]
+#[repr(i8)]
 pub enum Scene {
     // Global subs
-    None = 0xFF,
+    None = -1,
 
     // Tengoku
     AgbBatter = 0,
@@ -135,12 +135,13 @@ impl Scene {
 }
 
 type NamedLocations = &'static [(&'static str, u32)];
+type SceneLocations = &'static [(Scene, NamedLocations)];
 
 pub struct MegamixLocations {
     pub games: NamedLocations,
     pub gates: NamedLocations,
     pub gate_practices: NamedLocations,
-    pub subs: NamedLocations, //HashMap? maybe with lazy_static?
+    pub subs: SceneLocations,
     pub misc: NamedLocations,
 }
 
