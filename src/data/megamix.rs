@@ -1,8 +1,10 @@
 use bytestream::ByteOrder;
 
 use crate::{
-    data::{btks::BtksType, ArgsTickflowOp, OperationSet, Pointer, RawTickflowOp},
-    tf_op_args,
+    data::{
+        btks::BtksType, ArgsTickflowOpDef, OperationSet, Pointer, RawTickflowOp, TickflowOpDef,
+    },
+    tf_op, tf_op_args,
 };
 
 pub enum MegamixOp {
@@ -91,6 +93,7 @@ pub enum MegamixOp {
 
     Other(RawTickflowOp),
 }
+
 impl OperationSet for MegamixOp {
     const BTKS_TICKFLOW_TYPE: BtksType = BtksType::MegamixIntl;
     const ENDIAN: ByteOrder = ByteOrder::LittleEndian;
@@ -98,25 +101,25 @@ impl OperationSet for MegamixOp {
     //TODO: MissingRequiredArgument errors
     //TODO: finish this
     fn get_operation(op: RawTickflowOp) -> Self {
-        match (&op.op, &op.arg0, &op.scene) {
-            (0, 0, _) => Self::CallSub {
+        match op.as_definition() {
+            tf_op!(0) => Self::CallSub {
                 sub: *op.args.first().expect("Missing required argument"),
                 time: op.args.get(1).copied(),
                 cat: op.args.get(2).copied(),
             },
-            (1, 0, _) => Self::CallFunc {
+            tf_op!(1<0>) => Self::CallFunc {
                 func: *op.args.first().expect("Missing required argument"),
                 time: op.args.get(1).copied(),
             },
-            (1, 1, _) => Self::SetFunc {
+            tf_op!(1<1>) => Self::SetFunc {
                 func: *op.args.first().expect("Missing required argument"),
                 pos: (*op.args.get(1).expect("Missing required argument")).into(),
             },
-            (_, _, _) => Self::Other(op),
+            _ => Self::Other(op),
         }
     }
 
-    fn get_call_operations() -> Vec<ArgsTickflowOp> {
+    fn get_call_operations() -> Vec<ArgsTickflowOpDef> {
         vec![
             tf_op_args!(0x1<1>, [(1)]),
             tf_op_args!(0x2, [(0)]),
@@ -124,7 +127,7 @@ impl OperationSet for MegamixOp {
             tf_op_args!(0x6, [(0)]),
         ]
     }
-    fn get_string_operations() -> Vec<ArgsTickflowOp> {
+    fn get_string_operations() -> Vec<ArgsTickflowOpDef> {
         vec![
             tf_op_args!(0x31, [(1, true)]),
             tf_op_args!(0x35<0>, [(1, true)]),
@@ -161,27 +164,27 @@ impl OperationSet for MegamixOp {
             tf_op_args!(0x10A, [(0)], 0x39),
         ]
     }
-    fn get_array_operations() -> Vec<ArgsTickflowOp> {
+    fn get_array_operations() -> Vec<ArgsTickflowOpDef> {
         todo!();
     }
-    fn get_depth_operations() -> Vec<ArgsTickflowOp> {
+    fn get_depth_operations() -> Vec<TickflowOpDef> {
         vec![
-            tf_op_args!(0x16),
-            tf_op_args!(0x16<1>),
-            tf_op_args!(0x16<2>),
-            tf_op_args!(0x16<3>),
-            tf_op_args!(0x16<4>),
-            tf_op_args!(0x16<5>),
-            tf_op_args!(0x19),
+            tf_op!(0x16),
+            tf_op!(0x16<1>),
+            tf_op!(0x16<2>),
+            tf_op!(0x16<3>),
+            tf_op!(0x16<4>),
+            tf_op!(0x16<5>),
+            tf_op!(0x19),
         ]
     }
-    fn get_undepth_operations() -> Vec<ArgsTickflowOp> {
-        vec![tf_op_args!(0x18), tf_op_args!(0x1D)]
+    fn get_undepth_operations() -> Vec<TickflowOpDef> {
+        vec![tf_op!(0x18), tf_op!(0x1D)]
     }
-    fn get_scene_operation() -> ArgsTickflowOp {
+    fn get_scene_operation() -> ArgsTickflowOpDef {
         tf_op_args!(0x28, [(0)])
     }
-    fn get_return_operations() -> Vec<ArgsTickflowOp> {
-        vec![tf_op_args!(0x7), tf_op_args!(0x8)]
+    fn get_return_operations() -> Vec<TickflowOpDef> {
+        vec![tf_op!(0x7), tf_op!(0x8)]
     }
 }

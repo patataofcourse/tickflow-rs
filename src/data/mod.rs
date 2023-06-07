@@ -1,5 +1,3 @@
-use crate::tf_op_args;
-
 pub mod macros;
 
 /// Data representation for the BTKS (Binary Tickflow Specification) file format
@@ -30,13 +28,51 @@ pub struct TickflowOp {
     pub scene: i32,
 }
 
-/// Tickflow operation with specified args, for indicating which args indicate what in which operations
+/// Tickflow operation definition
+#[derive(Debug, Clone, Eq)]
+pub struct TickflowOpDef {
+    pub op: u16,
+    pub arg0: Option<u32>,
+    pub scene: i32,
+}
+
+/// Tickflow operation definition with specific args indicated
 #[derive(Debug, Clone)]
-pub struct ArgsTickflowOp {
+pub struct ArgsTickflowOpDef {
     pub op: u16,
     pub arg0: Option<u32>,
     pub args: Vec<(i8, bool)>,
     pub scene: i32,
+}
+
+impl RawTickflowOp {
+    pub fn as_definition(&self) -> TickflowOpDef {
+        TickflowOpDef {
+            op: self.op,
+            arg0: Some(self.arg0),
+            scene: self.scene,
+        }
+    }
+}
+
+impl PartialEq for TickflowOpDef {
+    fn eq(&self, other: &Self) -> bool {
+        self.op == other.op
+            && (if let Some(c) = &self.arg0 {
+                if let Some(d) = &other.arg0 {
+                    c == d
+                } else {
+                    true
+                }
+            } else {
+                true
+            })
+            && (if self.scene != -1 && other.scene != -1 {
+                self.scene == other.scene
+            } else {
+                true
+            })
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -44,6 +80,16 @@ pub enum Arg0 {
     Signed(i32),
     Unsigned(u32),
     Unknown(u32),
+}
+
+impl From<Arg0> for u32 {
+    fn from(value: Arg0) -> Self {
+        match value {
+            Arg0::Signed(c) => c as u32,
+            Arg0::Unsigned(c) => c,
+            Arg0::Unknown(c) => c,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -84,8 +130,8 @@ pub trait OperationSet {
     fn get_operation(op: RawTickflowOp) -> Self
     where
         Self: Sized;
-    fn get_call_operations() -> Vec<ArgsTickflowOp>;
-    fn is_call_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
+    fn get_call_operations() -> Vec<ArgsTickflowOpDef>;
+    fn is_call_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOpDef> {
         for call_op in Self::get_call_operations() {
             if op.op == call_op.op && (call_op.scene == -1 || call_op.scene == scene) {
                 match &call_op.arg0 {
@@ -100,8 +146,8 @@ pub trait OperationSet {
         }
         None
     }
-    fn get_string_operations() -> Vec<ArgsTickflowOp>;
-    fn is_string_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
+    fn get_string_operations() -> Vec<ArgsTickflowOpDef>;
+    fn is_string_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOpDef> {
         for return_op in Self::get_string_operations() {
             if op.op == return_op.op && (return_op.scene == -1 || return_op.scene == scene) {
                 match &return_op.arg0 {
@@ -116,8 +162,8 @@ pub trait OperationSet {
         }
         None
     }
-    fn get_array_operations() -> Vec<ArgsTickflowOp>;
-    fn is_array_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
+    fn get_array_operations() -> Vec<ArgsTickflowOpDef>;
+    fn is_array_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOpDef> {
         for array_op in Self::get_array_operations() {
             if op.op == array_op.op && (array_op.scene == -1 || array_op.scene == scene) {
                 match &array_op.arg0 {
@@ -132,8 +178,8 @@ pub trait OperationSet {
         }
         None
     }
-    fn get_depth_operations() -> Vec<ArgsTickflowOp>;
-    fn is_depth_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
+    fn get_depth_operations() -> Vec<TickflowOpDef>;
+    fn is_depth_operation(op: &RawTickflowOp, scene: i32) -> Option<TickflowOpDef> {
         for depth_op in Self::get_depth_operations() {
             if op.op == depth_op.op && (depth_op.scene == -1 || depth_op.scene == scene) {
                 match &depth_op.arg0 {
@@ -148,8 +194,8 @@ pub trait OperationSet {
         }
         None
     }
-    fn get_undepth_operations() -> Vec<ArgsTickflowOp>;
-    fn is_undepth_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
+    fn get_undepth_operations() -> Vec<TickflowOpDef>;
+    fn is_undepth_operation(op: &RawTickflowOp, scene: i32) -> Option<TickflowOpDef> {
         for undepth_op in Self::get_undepth_operations() {
             if op.op == undepth_op.op && (undepth_op.scene == -1 || undepth_op.scene == scene) {
                 match &undepth_op.arg0 {
@@ -164,7 +210,7 @@ pub trait OperationSet {
         }
         None
     }
-    fn get_scene_operation() -> ArgsTickflowOp;
+    fn get_scene_operation() -> ArgsTickflowOpDef;
     fn is_scene_operation(op: &RawTickflowOp) -> Option<i8> {
         let scene_op = Self::get_scene_operation();
         if op.op == scene_op.op {
@@ -179,8 +225,8 @@ pub trait OperationSet {
         }
         None
     }
-    fn get_return_operations() -> Vec<ArgsTickflowOp>;
-    fn is_return_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOp> {
+    fn get_return_operations() -> Vec<TickflowOpDef>;
+    fn is_return_operation(op: &RawTickflowOp, scene: i32) -> Option<TickflowOpDef> {
         for return_op in Self::get_return_operations() {
             if op.op == return_op.op && (return_op.scene == -1 || return_op.scene == scene) {
                 match &return_op.arg0 {
@@ -225,26 +271,26 @@ impl OperationSet for TickflowOp {
     fn get_operation(op: RawTickflowOp) -> Self {
         op.into()
     }
-    fn get_call_operations() -> Vec<ArgsTickflowOp> {
-        vec![]
+    fn get_call_operations() -> Vec<ArgsTickflowOpDef> {
+        unimplemented!("Operation types for generic TickflowOp")
     }
-    fn get_string_operations() -> Vec<ArgsTickflowOp> {
-        vec![]
+    fn get_string_operations() -> Vec<ArgsTickflowOpDef> {
+        unimplemented!("Operation types for generic TickflowOp")
     }
-    fn get_array_operations() -> Vec<ArgsTickflowOp> {
-        vec![]
+    fn get_array_operations() -> Vec<ArgsTickflowOpDef> {
+        unimplemented!("Operation types for generic TickflowOp")
     }
-    fn get_depth_operations() -> Vec<ArgsTickflowOp> {
-        vec![]
+    fn get_depth_operations() -> Vec<TickflowOpDef> {
+        unimplemented!("Operation types for generic TickflowOp")
     }
-    fn get_undepth_operations() -> Vec<ArgsTickflowOp> {
-        vec![]
+    fn get_undepth_operations() -> Vec<TickflowOpDef> {
+        unimplemented!("Operation types for generic TickflowOp")
     }
-    fn get_scene_operation() -> ArgsTickflowOp {
-        tf_op_args!(0)
+    fn get_scene_operation() -> ArgsTickflowOpDef {
+        unimplemented!("Operation types for generic TickflowOp")
     }
-    fn get_return_operations() -> Vec<ArgsTickflowOp> {
-        vec![tf_op_args!(1)]
+    fn get_return_operations() -> Vec<TickflowOpDef> {
+        unimplemented!("Operation types for generic TickflowOp")
     }
 }
 
