@@ -29,9 +29,9 @@ pub enum MegamixOp {
     KillCat(u32),
     KillLoc(Pointer),
     KillSub(u32),
-    RunSub(u32),
-    RunFunc(u32),
-    Run(Pointer),
+    CallSubSync(u32),
+    CallFuncSync(u32),
+    CallSync(Pointer),
     Return,
     Stop,
     Cat(u32),
@@ -45,7 +45,7 @@ pub enum MegamixOp {
         amount: u32,
     },
     GetRest(u32),
-    Delay(u32),
+    Sleep(u32),
     RestReset,
     Unrest(u32),
     Label(u32),
@@ -90,6 +90,32 @@ pub enum MegamixOp {
     SetSceneInitCounter,
     IncSceneInitCounter(i32),
     UnrestSceneInitCounter,
+    SceneModel {
+        scene: i32,
+        model_slot: u32,
+    },
+    SceneCellanim {
+        scene: i32,
+        cellanim_slot: u32,
+    },
+    SceneEffect {
+        scene: i32,
+        effect_slot: u32,
+    },
+    SceneLayout {
+        scene: i32,
+        layout_slot: u32,
+    },
+    SceneVersion {
+        scene: i32,
+        version: u32, //TODO: make this an enum
+    },
+    SceneGetVersion(i32),
+    //TODO: make this yet another enum
+    CurSceneIsVersion(u32),
+    SceneUnload,
+    SceneIsUnloaded,
+    Pause(bool),
 
     Other(RawTickflowOp),
 }
@@ -115,6 +141,50 @@ impl OperationSet for MegamixOp {
                 func: *op.args.first().expect("Missing required argument"),
                 pos: (*op.args.get(1).expect("Missing required argument")).into(),
             },
+            tf_op!(2) => Self::Call {
+                loc: (*op.args.first().expect("Missing required argument")).into(),
+                time: op.args.get(1).copied(),
+            },
+
+            tf_op!(3<0>) => Self::KillAll,
+            tf_op!(3<1>) => Self::KillCat(*op.args.first().expect("Missing required argument")),
+            tf_op!(3<2>) => Self::KillSub(*op.args.first().expect("Missing required argument")),
+            tf_op!(3<3>) => {
+                Self::KillLoc((*op.args.first().expect("Missing required argument")).into())
+            }
+
+            tf_op!(4) => Self::CallSubSync(*op.args.first().expect("Missing required argument")),
+            tf_op!(5) => Self::CallFuncSync(*op.args.first().expect("Missing required argument")),
+            tf_op!(6) => Self::Call {
+                loc: (*op.args.first().expect("Missing required argument")).into(),
+                time: op.args.get(1).copied(),
+            },
+
+            tf_op!(7) => Self::Return,
+            tf_op!(8) => Self::Stop,
+
+            tf_op!(9) => Self::Cat(*op.args.first().expect("Missing required argument")),
+
+            tf_op!(0xa) => {
+                Self::SetCondvar(*op.args.first().expect("Missing required argument") as i32)
+            }
+            tf_op!(0xb) => {
+                Self::AddCondvar(*op.args.first().expect("Missing required argument") as i32)
+            }
+            tf_op!(0xc) => Self::PushCondvar,
+            tf_op!(0xd) => Self::PopCondvar,
+
+            tf_op!(0xe<=arg0=>) => Self::Rest(arg0),
+            tf_op!(0xf<0>) => Self::SetRest {
+                slot: *op.args.first().expect("Missing required argument"),
+                amount: *op.args.get(1).expect("Missing required argument"),
+            },
+            tf_op!(0xf<1>) => Self::GetRest(*op.args.first().expect("Missing required argument")),
+            tf_op!(0x10<=arg0=>) => Self::Sleep(arg0),
+            tf_op!(0x11) => Self::RestReset,
+            //TODO: check if this one is truly arg0
+            tf_op!(0x12<=arg0=>) => Self::Unrest(arg0),
+
             _ => Self::Other(op),
         }
     }

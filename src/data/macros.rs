@@ -39,6 +39,13 @@ macro_rules! tf_op {
             scene: $($scene + 1)? - 1,
         }
     };
+    ($cmdname:literal <=$arg0:pat=> $(, $scene:literal)? $(,)?) => {
+        $crate::data::TickflowOpDef {
+            op: $cmdname,
+            arg0: Some($arg0),
+            scene: $($scene + 1)? - 1,
+        }
+    };
     ($cmdname:literal $(, $scene:literal)? $(,)?) => {
         $crate::data::TickflowOpDef {
             op: $cmdname,
