@@ -1,0 +1,88 @@
+### TICKFLOW2 / NEW TICKFLOW * SPECIFICATION ###
+version 0.1 (unfinished)
+
+* Tickflow2 and New Tickflow are working/wip names
+
+first non-comment non-empty line must be a #new_tickflow directive (see directives section)
+
+there's the following types of values:
+- integers (decimal, hex, octal, or binary): 0, 1, 549023, 0x29A, 0o31536, 0b10110
+- strings with an optional prefix u for utf-16 strings: "hello ascii", u"hello utf-16"
+    - the following characters can be escaped with a backlash: \ "
+    - newlines are represented with \n
+    - other optional prefixes can be added
+- arrays: [0, 1, 2], u16[5, 9, 65535], ["hello", "world"], i8[-127, 0, 127]
+    - can contain any number of elements of one type
+    - can contain strings or other arrays. example for RHDS:
+        const epilogue_strings = [
+            // Try Again
+            [
+                null, // JP
+                "hello", // EN
+                ...
+            ],
+            ...
+        ]
+- identifiers: must start with a letter or _. characters after that can also be numeric
+    - identifiers can also refer to elements inside namespaces, like so: $namespace.$element
+    - this can be nested as much as needed
+    - keywords: reserved identifiers that cannot be used
+        - true (constant equals to 1)
+        - false (constant equals to 0)
+        - null (constant equals to 0 that can overwrite a string or array)
+        - sub
+        - sync
+        - const
+        - if, if_eq, if_ne, if_gt, if_ge, if_lt, if_le
+        - else
+        - switch
+        - case
+        - default
+        - command names are also treated as keywords for the sake of clarity
+
+you can apply operations to integers:
+- addition: a + b
+- substraction: a - b
+- multiplication: a * b
+- integer division: a / b
+- shift left: a << b
+- shift right: a >> b
+- bitwise AND: a & b
+- bitwise OR: a | b
+- bitwise XOR: a ^ b
+- negation: -a
+- bitwise NOT: ~a
+
+statements usually take up a line, but can be terminated by a semicolon. you can add another statement after that semicolon
+lines can be empty
+there's the following kinds of statements:
+- directives
+    - of the form #$name $($args )*
+    - $name is specified by the directive definition
+    - $args is feeded to the directive. args taken depends on the directive
+    - the following directives exist:
+        - #new_tickflow
+            - required to be read as a Tickflow2 file
+            - must be the first non-comment non-empty line in the file
+        - #alias $name $signature
+            - name: identifier to set the alias to
+            - signature: command signature to set the alias to. $cmd $(<$arg0>)? $($argtypes),+
+        - #include $filename
+            - filename: string, name of the file to include
+        - #index $index
+            - index: default index to set this mod to target, for a generated mod manifest file. file must not be an includable
+        - #name $name
+            - name: name of the mod, for a generated mod manifest. file must not be an includable
+        - #authors $authors
+            - authors: array of names of mod authors, for a generated mod manifest. file must not be an includable
+        - #description $description
+            - description: description of the mod, for a generated mod manifest. file must not be an includable
+        - #version $version
+            - version: semver version of the mod, for a generated mod manifest. file must not be an includable
+        - ...
+- ...
+
+TODO:
+- port everything from the old spec
+- new additions
+- tickflow standard library
