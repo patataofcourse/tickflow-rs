@@ -1,5 +1,5 @@
-### TICKFLOW2 / NEW TICKFLOW * SPECIFICATION ###
-version 0.1 (unfinished)
+### TICKFLOW2 / NEW TICKFLOW* SPECIFICATION ###
+=> version 0.1.0 (unfinished)
 
 * Tickflow2 and New Tickflow are working/wip names
 
@@ -53,7 +53,7 @@ you can apply operations to integers:
 - negation: -a
 - bitwise NOT: ~a
 
-statements usually take up a line, but can be terminated by a semicolon. you can add another statement after that semicolon
+statements usually take up a line, but can be terminated by a semicolon. you can add another statement after that semicolon, however, this is only recommended for commands.
 lines can be empty
 there's the following kinds of statements:
 - directives
@@ -79,8 +79,77 @@ there's the following kinds of statements:
             - description: description of the mod, for a generated mod manifest. file must not be an includable
         - #version $version
             - version: semver version of the mod, for a generated mod manifest. file must not be an includable
-        - ...
-- ...
+        - #includeme
+            - specifies this file can be included and cannot be compiled standalone
+        - #module $namespace
+            - specifies this file can be included and cannot be compiled standalone
+            - all its subs and constants will be included within a namespace called $namespace
+        - #requires $version
+            - version: semver version of the tickflow spec. needs to match to compile this file
+            - if the version is x.y.z, where x != 0, the spec version needed by the compiler is:
+                - x needs to match exactly
+                - y needs to be greater or equal
+                - z needs to be greater or equal if y is equal
+            - if the version is 0.y.z, the spec version needed by the compiler is:
+                - y needs to match exactly
+                - z needs to be greater or equal
+        - #tempo $id $samplerate
+            - id: id for the tempo file this tempo will target
+            - samplerate: optional, sample rate that the tempo file will work with
+        - #endtempo
+- subs: short for "subroutines", they contain all the actual tickflow bytecode
+    - subs are declared with the keyword "sub", the name of the sub, and a pair of curly brackets {}, like so:
+        sub $sub_name {
+            $sub_contents
+        }
+    - before the keyword "sub", the keyword "sync" can be added to indicate that this sub is to be called synchronously, that is, without spawning a new thread
+        * if the tickflow language implementation used ONLY supports synchronous/single-threaded execution, all subs must be declared as sync for clarity
+    - the contents of the sub is a list of "command statements" and "syntactic statements", which work the same as any other statement, except they are specific to sub contents:
+        - commands are the direct representation of tickflow, abstracted for easier understanding
+            - they follow the syntax $name 
+            - unlike old Tickflow, arg0s are not to be handled manually in Tickflow2. they are an argument just like any other, or are used to distinguish between two different commands
+            - "old Tickflow-like" commands can be used with the "raw_opcode $val $(<$arg0>)? $($args),*" syntax, but val must be a numeric value, not a command definition
+            - for commands undefined in the current implementation for a specific language, see the #alias directive
+            - the language implementation can abstract these commands as much as it needs to make the language simple and easy to use. optionally, raw variants of these commands may be supplied
+        - syntactic statements are the abstraction of some concepts commonly used in tickflow. if they do not exist or cannot be represented in a specific language, the implementation for it can manually disable them. examples are:
+            * NOTE: since tickflow usually works with a conditional variable, condition-based statements work by applying a specific comparison to that specific variable and a given constant value
+                - if this ever changes (for example, in a "Rhythm Heaven 5" which MUST STILL USE TICKFLOW), the spec may be updated
+                - strings and arrays CANNOT be compared to each other unless the language SPECIFICALLY features string/array comparison
+            - if / else if / else statements (including if_eq, if_ne, etc. variants)
+                if $condition {
+                    ...
+                } else if_lt $condition {
+                    ...
+                } else {
+                    ...
+                }
+            - switch / case statements
+                switch {
+                    case $condition:
+                        ...
+                        break
+                    case $condition:
+                        ...
+                    case $condition:
+                    case $condition:
+                        ...
+                        break
+                    default:
+                        ...
+                }
+                * the final case in the switch/case does not need to include a break statement
+            - inconditional loops
+                do $number_of_times {
+                    ...
+                }
+                * this will expand the code inside the loop the specific amount of times required if the language does not include an inconditional loop function
+                * do n {} MUST NOT alter the conditional variable, or at least must do so in a way that does not affect Tickflow execution
+            - conditional loops (including while_eq, while_ne, etc. variants)
+                while $condition {
+                    ...
+                }
+                * this will repeat the code inside the loop until the conditional variable succeeds in the comparison
+- constant definitions: TBD
 
 TODO:
 - port everything from the old spec
