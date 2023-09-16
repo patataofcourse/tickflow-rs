@@ -1,5 +1,5 @@
 ### TICKFLOW2 / NEW TICKFLOW* SPECIFICATION ###
-=> version 0.1.0-draft2
+=> version 0.1.0-draft3
 
 * Tickflow2 and New Tickflow are working/wip names
 
@@ -76,9 +76,6 @@ there's the following kinds of statements:
         - #new_tickflow
             - required to be read as a Tickflow2 file
             - must be the first non-comment non-empty line in the file
-        - #alias $name $signature
-            - name: identifier to set the alias to
-            - signature: command signature to set the alias to. $cmd $(<$arg0>)? $($argtypes),+
         - #include $filename
             - filename: string, name of the file to include
         - #index $index
@@ -174,6 +171,11 @@ there's the following kinds of statements:
         const d = [some_sub, some_other sub]
         const e = [a, b, c]
     - two constants CANNOT have the same name! this will be a compile-time error
+- command definitions: creates an alias to any other command, whether an existing definition or a simple raw_op
+    - to be written out, have some examples for now
+        - command throw_pot = karate.cue 0
+        - command async_call a:sub, b:int, c:int = raw_op 0 a, b, c
+    - supported types: any, sub, sub_sync, int, u8, u16, u32, i8, i16, i32, $type [] (arrays), str/string
 
 line comments start with a //
 multiline comments are started with /* and finished with */, like C comments
@@ -192,6 +194,7 @@ each language implementation would include the following, defined in code:
         - how standard library subs will be written will be described in future versions of the specification, currently Tickflow2 DOES NOT OFFICIALLY SUPPORT STANDARD LIBRARY SUBS, only constants 
 - a "runtime"
     - this is a setup system that allows the code to be simplified, similar to Tickflow templates such as EHG's and TheAltDoc's
+    - it consists of pre-written Tickflow2 that can be used as a base for less complex charts and projects
     - the runtime must include references or calls to at least one sub that will be defined in the tickflower's code, and may also optionally include references or calls to more user-defined subs or constants
     - the runtime can be overriden at any time by creating a sub named "_start", which will override the runtime's original "_start" sub
         - ways to make runtime overrides more modular may be included in future versions of the specification
@@ -204,5 +207,7 @@ each language implementation would include the following, defined in code:
     - #module is one possible name, however, that could be confusing, since modules usually involve wrapping in a namespace in programming contexts
 - is "syntactic statements" a good name?
 - is the language as defined in this spec too jarring of a change? does it still include some inaccessibility issues for people unexperienced with code?
+- finish the spec on command statements and re-check the type list
 - make the spec cleaner, clearer, and more consistent with more formal language specifications
+- convert the spec into some markup format (probably markdown)
 - actually implement the spec!
