@@ -1,7 +1,13 @@
 ### TICKFLOW2 / NEW TICKFLOW* SPECIFICATION ###
-=> version 0.1.0 (unfinished)
+=> version 0.1.0-draft1
 
 * Tickflow2 and New Tickflow are working/wip names
+
+~~~~~~~~
+
+Please note that this is an INFORMAL specification, and as such, it does not follow standards such as RFC 2119. In the future, the spec may be cleaned up for higher level of accessibility.
+
+~~~~~~~~
 
 first non-comment non-empty line must be a #new_tickflow directive (see directives section)
 
@@ -26,7 +32,7 @@ there's the following types of values:
 - identifiers: must start with a letter or _. characters after that can also be numeric
     - identifiers can also refer to elements inside namespaces, like so: $namespace.$element
     - this can be nested as much as needed
-    - keywords: reserved identifiers that cannot be used
+    - keywords: reserved identifiers that cannot be used as a sub or constant name
         - true (constant equals to 1)
         - false (constant equals to 0)
         - null (constant equals to 0 that can overwrite a string or array)
@@ -38,7 +44,11 @@ there's the following types of values:
         - switch
         - case
         - default
-        - command names are also treated as keywords for the sake of clarity
+        - raw_op
+        - command names are also treated as keywords for the sake of clarity, however, those vary between language implementations
+    - identifiers, when taken as arguments, must refer to an existing constant or sub
+        - in the case of it being a constant, it will resolve to the value of said constant
+        - in the case of it being a sub, it will resolve to a pointer to said sub, which is its own type
 
 you can apply operations to integers:
 - addition: a + b
@@ -52,6 +62,8 @@ you can apply operations to integers:
 - bitwise XOR: a ^ b
 - negation: -a
 - bitwise NOT: ~a
+
+you can also apply (compile-time) concatenation to strings using the + operator, like addition for integers
 
 statements usually take up a line, but can be terminated by a semicolon. you can add another statement after that semicolon, however, this is only recommended for commands.
 lines can be empty
@@ -102,8 +114,8 @@ there's the following kinds of statements:
         sub $sub_name {
             $sub_contents
         }
+    - two subs CANNOT have the same name! this will be a compile-time error
     - before the keyword "sub", the keyword "sync" can be added to indicate that this sub is to be called synchronously, that is, without spawning a new thread
-        * if the tickflow language implementation used ONLY supports synchronous/single-threaded execution, all subs must be declared as sync for clarity
     - the contents of the sub is a list of "command statements" and "syntactic statements", which work the same as any other statement, except they are specific to sub contents:
         - commands are the direct representation of tickflow, abstracted for easier understanding
             - they follow the syntax $name 
@@ -149,9 +161,38 @@ there's the following kinds of statements:
                     ...
                 }
                 * this will repeat the code inside the loop until the conditional variable succeeds in the comparison
-- constant definitions: TBD
+- constant definitions: sets a variable to a certain value, to be used by the file anywhere else
+    - form is "const $name = $value"
+    - value can be any value Tickflow2 can handle, name has to be a valid variable name
+    - you can set constants to sub pointers, other constants or to modifications of other constants, for example:
+        const a = 2
+        const b = a
+        const c = b << 3
+        // note that this "inline" format for subs is only used as an example, and is NOT valid Tickflow2
+        sub some_sub { ... }
+        sub some_other_sub { ... }
+        const d = [some_sub, some_other sub]
+        const e = [a, b, c]
+    - two constants CANNOT have the same name! this will be a compile-time error
 
-TODO:
-- port everything from the old spec
-- new additions
-- tickflow standard library
+line comments start with a //
+multiline comments are started with /* and finished with */, like C comments
+
+each language implementation would include the following, defined in code:
+- definitions for commands
+    - this is the most important part, because it's what makes Tickflow2 worth it - less need to manually work with hex codes, opening up a more accessible language for newcomers and oldies alike
+    - command names may be namespaced
+- a standard library, which would be available for any Tickflow2 file to use as a module
+    - the module does not need to be called "std"; and most likely will not for accessibility to people not experienced with programming
+        - some ideas (for RHM international) are "megamix", "rh3ds", etc.
+        - the stardard library MUST NOT be split across several modules, like the Python standard libraries are
+    - the contents of the standard library will consist of different subs and constants to enhance the tickflowing existence and give some values a meaning
+        - some example of constants that could be defined are: sub names, button codes, scene or game IDs, etc.
+        - the standard library may include its items inside namespaces
+        - how standard library subs will be written will be described in future versions of the specification, currently Tickflow2 DOES NOT OFFICIALLY SUPPORT STANDARD LIBRARY SUBS, only constants 
+- a "runtime"
+    - this is a setup system that allows the code to be simplified, similar to Tickflow templates such as EHG's and TheAltDoc's
+    - the runtime must include references or calls to at least one sub that will be defined in the tickflower's code, and may also optionally include references or calls to more user-defined subs or constants
+    - the runtime can be overriden at any time by creating a sub named "_start", which will override the runtime's original "_start" sub
+        - ways to make runtime overrides more modular may be included in future versions of the specification
+    - how the runtime will be written and distributed will be described in future versions of the specification, currently Tickflow2 DOES NOT OFFICIALLY SUPPORT RUNTIMES
