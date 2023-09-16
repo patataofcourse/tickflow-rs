@@ -1,5 +1,5 @@
 ### TICKFLOW2 / NEW TICKFLOW* SPECIFICATION ###
-=> version 0.1.0-draft1
+=> version 0.1.0-draft2
 
 * Tickflow2 and New Tickflow are working/wip names
 
@@ -186,7 +186,7 @@ each language implementation would include the following, defined in code:
     - the module does not need to be called "std"; and most likely will not for accessibility to people not experienced with programming
         - some ideas (for RHM international) are "megamix", "rh3ds", etc.
         - the stardard library MUST NOT be split across several modules, like the Python standard libraries are
-    - the contents of the standard library will consist of different subs and constants to enhance the tickflowing existence and give some values a meaning
+    - the contents of the standard library will consist of different subs and constants to enhance the tickflowing experience and give some values a meaning through a name
         - some example of constants that could be defined are: sub names, button codes, scene or game IDs, etc.
         - the standard library may include its items inside namespaces
         - how standard library subs will be written will be described in future versions of the specification, currently Tickflow2 DOES NOT OFFICIALLY SUPPORT STANDARD LIBRARY SUBS, only constants 
@@ -196,3 +196,13 @@ each language implementation would include the following, defined in code:
     - the runtime can be overriden at any time by creating a sub named "_start", which will override the runtime's original "_start" sub
         - ways to make runtime overrides more modular may be included in future versions of the specification
     - how the runtime will be written and distributed will be described in future versions of the specification, currently Tickflow2 DOES NOT OFFICIALLY SUPPORT RUNTIMES
+
+### what's left?
+- specify a method for runtime and standard library sub creation and distribution
+- should we keep the name/author/description/version fields for includables/modules?
+- should #includeme and #module be one directive? if so, what could be the name?
+    - #module is one possible name, however, that could be confusing, since modules usually involve wrapping in a namespace in programming contexts
+- is "syntactic statements" a good name?
+- is the language as defined in this spec too jarring of a change? does it still include some inaccessibility issues for people unexperienced with code?
+- make the spec cleaner, clearer, and more consistent with more formal language specifications
+- actually implement the spec!
