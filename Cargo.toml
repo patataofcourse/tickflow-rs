@@ -1,3 +1,6 @@
+[workspace]
+members = ["tickflow-parse"]
+
 [package]
 name = "tickflow-rs"
 authors = ["patataofcourse"]
