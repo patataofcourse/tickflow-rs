@@ -1,5 +1,5 @@
 ### TICKFLOW2 / NEW TICKFLOW* SPECIFICATION ###
-=> version 0.1.0-draft3
+=> version 0.1.0-draft4
 
 * Tickflow2 and New Tickflow are working/wip names
 
@@ -29,6 +29,7 @@ there's the following types of values:
             ],
             ...
         ]
+    - you can specify for integer arrays the type of the integer contained by writing it before the array
 - identifiers: must start with a letter or _. characters after that can also be numeric
     - identifiers can also refer to elements inside namespaces, like so: $namespace.$element
     - this can be nested as much as needed
@@ -45,10 +46,12 @@ there's the following types of values:
         - case
         - default
         - raw_op
-        - command names are also treated as keywords for the sake of clarity, however, those vary between language implementations
+        - command names are also treated as keywords for the sake of clarity, however, those names vary between language implementations
     - identifiers, when taken as arguments, must refer to an existing constant or sub
         - in the case of it being a constant, it will resolve to the value of said constant
         - in the case of it being a sub, it will resolve to a pointer to said sub, which is its own type
+    - no two items can share the same identifier (constants, subs, etc.)
+        - if they do, the compiler will emit an error
 
 you can apply operations to integers:
 - addition: a + b
@@ -69,7 +72,7 @@ statements usually take up a line, but can be terminated by a semicolon. you can
 lines can be empty
 there's the following kinds of statements:
 - directives
-    - of the form #$name $($args )*
+    - of the form #$name $args
     - $name is specified by the directive definition
     - $args is feeded to the directive. args taken depends on the directive
     - the following directives exist:
@@ -81,13 +84,13 @@ there's the following kinds of statements:
         - #index $index
             - index: default index to set this mod to target, for a generated mod manifest file. file must not be an includable
         - #name $name
-            - name: name of the mod, for a generated mod manifest. file must not be an includable
+            - name: name of the mod, for a generated mod manifest
         - #authors $authors
-            - authors: array of names of mod authors, for a generated mod manifest. file must not be an includable
+            - authors: array of names of mod authors, for a generated mod manifest
         - #description $description
-            - description: description of the mod, for a generated mod manifest. file must not be an includable
+            - description: description of the mod, for a generated mod manifest
         - #version $version
-            - version: semver version of the mod, for a generated mod manifest. file must not be an includable
+            - version: semver version of the mod, for a generated mod manifest
         - #includeme
             - specifies this file can be included and cannot be compiled standalone
         - #module $namespace
@@ -111,18 +114,17 @@ there's the following kinds of statements:
         sub $sub_name {
             $sub_contents
         }
-    - two subs CANNOT have the same name! this will be a compile-time error
     - before the keyword "sub", the keyword "sync" can be added to indicate that this sub is to be called synchronously, that is, without spawning a new thread
     - the contents of the sub is a list of "command statements" and "syntactic statements", which work the same as any other statement, except they are specific to sub contents:
         - commands are the direct representation of tickflow, abstracted for easier understanding
-            - they follow the syntax $name 
+            - they follow the syntax $name $($args),?
             - unlike old Tickflow, arg0s are not to be handled manually in Tickflow2. they are an argument just like any other, or are used to distinguish between two different commands
-            - "old Tickflow-like" commands can be used with the "raw_opcode $val $(<$arg0>)? $($args),*" syntax, but val must be a numeric value, not a command definition
-            - for commands undefined in the current implementation for a specific language, see the #alias directive
+            - "old Tickflow-like" commands can be used with the "raw_op $val $(<$arg0>)? $($args),*" syntax, but val must be a numeric value, not a command definition
+            - for commands undefined in the current implementation for a specific language, see command definition statements
             - the language implementation can abstract these commands as much as it needs to make the language simple and easy to use. optionally, raw variants of these commands may be supplied
         - syntactic statements are the abstraction of some concepts commonly used in tickflow. if they do not exist or cannot be represented in a specific language, the implementation for it can manually disable them. examples are:
-            * NOTE: since tickflow usually works with a conditional variable, condition-based statements work by applying a specific comparison to that specific variable and a given constant value
-                - if this ever changes (for example, in a "Rhythm Heaven 5" which MUST STILL USE TICKFLOW), the spec may be updated
+            * NOTE: since tickflow usually works with a conditional variable, condition-based statements work by applying a specific comparison to that specific variable and a given constant value (condition)
+                - if this ever changes (for example, in a "Rhythm Heaven 5" where it STILL USES TICKFLOW), the spec may be updated
                 - strings and arrays CANNOT be compared to each other unless the language SPECIFICALLY features string/array comparison
             - if / else if / else statements (including if_eq, if_ne, etc. variants)
                 if $condition {
@@ -153,6 +155,11 @@ there's the following kinds of statements:
                 }
                 * this will expand the code inside the loop the specific amount of times required if the language does not include an inconditional loop function
                 * do n {} MUST NOT alter the conditional variable, or at least must do so in a way that does not affect Tickflow execution
+
+                loop {
+                    ...
+                }
+                * this will make the loop go on forever until it is killed (kill_loc, kill_cat, engine switching, etc.)
             - conditional loops (including while_eq, while_ne, etc. variants)
                 while $condition {
                     ...
@@ -170,12 +177,14 @@ there's the following kinds of statements:
         sub some_other_sub { ... }
         const d = [some_sub, some_other sub]
         const e = [a, b, c]
-    - two constants CANNOT have the same name! this will be a compile-time error
 - command definitions: creates an alias to any other command, whether an existing definition or a simple raw_op
-    - to be written out, have some examples for now
-        - command throw_pot = karate.cue 0
-        - command async_call a:sub, b:int, c:int = raw_op 0 a, b, c
-    - supported types: any, sub, sub_sync, int, u8, u16, u32, i8, i16, i32, $type [] (arrays), str/string
+    - form is "const $new_signature = $old_signature"
+    - the new signature can define arguments by type, following this syntax: cmd_name variable:type, variable:type, ...
+        - supported types: any, sub, sub_sync, int, uint, u8, u16, u32, i8, i16, i32, $type [] (arrays, like u8[], u16[], etc), string
+            - int/uint is only supported for arguments directly and defaults to either 32-bit or 18-bit depending on context (iX/uX is not supported for arguments)
+            - arrays need a specific integer or sub type (int/uint is not supported in arrays)
+    - the old signature can use any existing command (including raw_op), plus the variables/arguments defined in the new signature
+        - example: command call.default _sub: sub = raw_op 0<4>, _sub, 0, 0
 
 line comments start with a //
 multiline comments are started with /* and finished with */, like C comments
@@ -202,12 +211,12 @@ each language implementation would include the following, defined in code:
 
 ### what's left?
 - specify a method for runtime and standard library sub creation and distribution
-- should we keep the name/author/description/version fields for includables/modules?
 - should #includeme and #module be one directive? if so, what could be the name?
     - #module is one possible name, however, that could be confusing, since modules usually involve wrapping in a namespace in programming contexts
 - is "syntactic statements" a good name?
+- should #requires be required? probably yes, right?
+- describe the #tempo - #endtempo format (will be mostly the same as Tickompiler)
 - is the language as defined in this spec too jarring of a change? does it still include some inaccessibility issues for people unexperienced with code?
-- finish the spec on command statements and re-check the type list
 - make the spec cleaner, clearer, and more consistent with more formal language specifications
 - convert the spec into some markup format (probably markdown)
 - actually implement the spec!
