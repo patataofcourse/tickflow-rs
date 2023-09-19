@@ -11,7 +11,9 @@ pub fn main() {
     ];
     for b in a {
         match b {
-            Ok(c) => {dbg!(c.1);},
+            Ok(c) => {
+                dbg!(c.1);
+            }
             Err(e) => println!("{}", e),
         }
     }

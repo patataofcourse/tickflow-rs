@@ -1,3 +1,9 @@
+/// "Old tickflow", .tickflow / .tkm / Tickompiler tickflow
+pub mod old;
+
+pub mod error;
+pub use error::Result;
+
 use nom::{
     bytes::complete::tag,
     character::complete::{digit1, hex_digit1, oct_digit1},
