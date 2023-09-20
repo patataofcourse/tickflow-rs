@@ -2,22 +2,23 @@
 for Tickompiler 1.10
 
 there's three types of values:
-- integers (decimal, hex, octal, or binary): 0, 1, 549023, 0x29A, 0o31536, 0b10110
+- integers (decimal, hex, or binary): 0, 1, 549023, 0x29A, 0b10110
 - strings with an optional prefix u for utf-16 strings: "hello ascii", u"hello utf-16"
     - the following characters can be escaped with a backlash: \ "
     - newlines are represented with \n
 - identifiers: must start with a letter, $ or _. characters after that can also be numeric
 
 you can apply operations to integers:
-- addition: +
-- substraction: -
-- multiplication: *
-- integer division: /
-- shift left: <<
-- shift right: >>
-- bitwise AND: &
-- bitwise OR: |
-- bitwise XOR: ^
+- addition: a + b
+- substraction: a - b
+- multiplication: a * b
+- integer division: a / b
+- shift left: a << b
+- shift right: a >> b
+- bitwise AND: a & b
+- bitwise OR: a | b
+- bitwise XOR: a ^ b
+- negation: -a
 
 each statement takes up a line
 a line can be empty

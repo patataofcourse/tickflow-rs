@@ -17,4 +17,17 @@ pub fn main() {
             Err(e) => println!("{}", e),
         }
     }
+    let a = [
+        old::parsing::read_statement("label:"),
+        old::parsing::read_statement("#index 0"),
+        old::parsing::read_statement("name = value"),
+    ];
+    for b in a {
+        match b {
+            Ok(c) => {
+                dbg!(c);
+            }
+            Err(e) => println!("{}", e),
+        }
+    }
 }
