@@ -20,7 +20,7 @@ pub struct Context {
 }
 
 lazy_static! {
-    static ref IDENTIFIER_REGEX: Regex = Regex::new("[A-Za-z_$][A-Za-z0-9_$]*").unwrap();
+    static ref IDENTIFIER_REGEX: Regex = Regex::new("^[A-Za-z_$][A-Za-z0-9_$]*").unwrap();
 }
 
 #[derive(Debug, Clone)]

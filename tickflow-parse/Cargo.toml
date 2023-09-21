@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 nom = "7.1"
-nom-regex = "0.2"
 regex = "1.9"
 thiserror = "1.0"
 lazy_static = "1.4"

@@ -2,33 +2,29 @@ use tickflow_parse::*;
 
 pub fn main() {
     let a = [
-        parse_integer("0"),
-        parse_integer("1435"),
-        parse_integer("0x1000"),
-        parse_integer("0o244"),
-        parse_integer("0b1010101011"),
-        parse_integer("gajdklgadj"),
-    ];
-    for b in a {
-        match b {
-            Ok(c) => {
-                dbg!(c.1);
-            }
-            Err(e) => println!("{}", e),
-        }
-    }
-    let a = [
         old::parsing::read_statement(r#"name = "\"value\n\\" "#),
+        old::parsing::read_statement(r#"name = u"\"value\n\\" "#),
+        old::parsing::read_statement(r#"name = h"\"value\n\\" "#),
+        old::parsing::read_statement(r#"name = 60"#),
+        old::parsing::read_statement(r#"name = 0x1f"#),
+        old::parsing::read_statement(r#"name = 0b01"#),
+        old::parsing::read_statement(r#"name = 2 + 2"#),
+        old::parsing::read_statement(r#"name = 2 - 0x10"#),
+        old::parsing::read_statement(r#"name = 2 * some_constant"#),
+        old::parsing::read_statement(r#"name = "a" / some_constant"#),
+        old::parsing::read_statement(r#"name = 2 << some_constant >> 4 & 1 | 2 ^ 3"#),
+        old::parsing::read_statement("name = value"),
         old::parsing::read_statement("label:"),
         //old::parsing::read_statement("#index 0"),
-        //old::parsing::read_statement("name = value"),
     ];
     for b in a {
         match b {
             Ok(c) => {
                 dbg!(c);
             }
-            Err(e) => println!("{}", e),
+            Err(e) => {
+                dbg!(e.to_string());
+            }
         }
     }
 }
