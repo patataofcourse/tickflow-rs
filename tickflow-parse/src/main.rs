@@ -15,15 +15,17 @@ pub fn main() {
         old::parsing::read_statement(r#"name = 2 << some_constant >> 4 & 1 | 2 ^ 3"#),
         old::parsing::read_statement("name = value"),
         old::parsing::read_statement("label:"),
-        //old::parsing::read_statement("#index 0"),
+        old::parsing::read_statement("#index 0x69"),
+        old::parsing::read_statement("#alias yourmom 0"),
+        old::parsing::read_statement("#include thisShouldBeAString.tickflow"),
     ];
     for b in a {
         match b {
             Ok(c) => {
-                dbg!(c);
+                println!("{c:?}");
             }
             Err(e) => {
-                dbg!(e.to_string());
+                println!("{e}");
             }
         }
     }

@@ -25,9 +25,43 @@ pub fn read_statement(input: &str) -> Result<Statement> {
         tuple::<_, _, (), _>((tag::<_, _, ()>("#"), ident, space1))(input)
     {
         match name.as_str() {
-            "index" | "start" | "assets" => todo!(),
-            "alias" => todo!(),
-            "include" => todo!(),
+            "index" | "start" | "assets" => {
+                if let Ok((_, (val, _, _))) = tuple::<_, _, (), _>((value, space0, eof))(remaining)
+                {
+                    let val = val?;
+                    if !matches!(val, Value::Integer(_)) {
+                        return Err(OldTfError::SyntaxError.with_ctx());
+                    }
+
+                    Ok(Statement::Directive {
+                        name,
+                        args: vec![val],
+                    })
+                } else {
+                    Err(OldTfError::SyntaxError.with_ctx())
+                }
+            }
+            "alias" => match tuple::<_, _, (), _>((ident, space0, value, space0, eof))(remaining) {
+                Ok((_, (aname, _, val, _, _))) => {
+                    let val = val?;
+                    if !matches!(val, Value::Integer(_)) {
+                        return Err(OldTfError::SyntaxError.with_ctx());
+                    }
+
+                    Ok(Statement::Directive {
+                        name,
+                        args: vec![Value::Constant(aname), val],
+                    })
+                }
+                Err(_) => Err(OldTfError::SyntaxError.with_ctx()),
+            },
+            "include" => Ok(Statement::Directive {
+                name,
+                args: vec![Value::String {
+                    value: remaining.trim().to_string(),
+                    is_unicode: false,
+                }],
+            }),
             _ => Err(OldTfError::InvalidDirective(name).with_ctx())?,
         }
     } else if let Ok((_, (name, _, _, _))) =
