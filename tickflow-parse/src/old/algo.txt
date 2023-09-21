@@ -5,4 +5,4 @@
 
 todo:
     - how to get pointers to labels before everything is compiled
-        - maybe resolve labels in a step after everything else is compiled?
+    - maybe resolve labels in a step after everything else is compiled?

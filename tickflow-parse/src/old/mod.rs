@@ -38,7 +38,7 @@ impl Identifier {
     pub fn new(contents: impl ToString) -> Result<Self> {
         let contents = contents.to_string();
         if !IDENTIFIER_REGEX.is_match(&contents) {
-            Err(OldTfError::InvalidIdentifier(contents))?
+            Err(OldTfError::InvalidIdentifier(contents).with_ctx())?
         } else {
             Ok(Self(contents))
         }

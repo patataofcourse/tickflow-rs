@@ -18,9 +18,10 @@ pub fn main() {
         }
     }
     let a = [
+        old::parsing::read_statement(r#"name = "\"value\n\\" "#),
         old::parsing::read_statement("label:"),
-        old::parsing::read_statement("#index 0"),
-        old::parsing::read_statement("name = value"),
+        //old::parsing::read_statement("#index 0"),
+        //old::parsing::read_statement("name = value"),
     ];
     for b in a {
         match b {
