@@ -28,6 +28,13 @@ pub fn process_escapes(string: &str) -> String {
         .replace("\\\"", "\"")
 }
 
+pub fn create_escapes(string: &str) -> String {
+    string
+        .replace('\\', r"\\")
+        .replace('\n', r"\n")
+        .replace('"', "\\\"")
+}
+
 pub fn read_anysign_int(src: &str, radix: u32) -> std::result::Result<i32, std::num::IntErrorKind> {
     let number = i64::from_str_radix(src, radix).map_err(|e| e.kind().clone())?;
     if number >= 0 {

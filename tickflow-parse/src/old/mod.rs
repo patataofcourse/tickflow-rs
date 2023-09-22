@@ -6,6 +6,7 @@ use regex::Regex;
 use crate::{error::OldTfError, Result};
 
 pub mod parsing;
+pub mod printing;
 
 #[derive(Debug, Clone)]
 pub struct Context {

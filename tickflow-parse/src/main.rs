@@ -24,10 +24,11 @@ pub fn main() {
     for b in a {
         match b {
             Ok(c) => {
-                println!("{c:?}");
+                //println!("{c:?}");
+                println!("{c}");
             }
             Err(e) => {
-                println!("{e}");
+                println!("//{e}");
             }
         }
     }
