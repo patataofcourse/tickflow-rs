@@ -1,12 +1,11 @@
-use std::fmt::Debug;
-
 use lazy_static::lazy_static;
 use nom::{
     bytes::complete::tag,
     character::complete::{digit1, hex_digit1, space0, space1},
-    combinator::eof,
+    combinator::{eof, opt},
     error::ParseError,
-    sequence::tuple,
+    multi::separated_list0,
+    sequence::{delimited, pair, tuple},
     IResult,
 };
 use regex::Regex;
@@ -18,7 +17,7 @@ use crate::{
     Result,
 };
 
-use super::{Identifier, Operation, Statement, Value, IDENTIFIER_REGEX};
+use super::{Command, CommandName, Identifier, Operation, Statement, Value, IDENTIFIER_REGEX};
 
 pub fn read_statement(input: &str) -> Result<Statement> {
     if let Ok((remaining, (_, name, _))) =
@@ -26,33 +25,23 @@ pub fn read_statement(input: &str) -> Result<Statement> {
     {
         match name.as_str() {
             "index" | "start" | "assets" => {
-                if let Ok((_, (val, _, _))) = tuple::<_, _, (), _>((value, space0, eof))(remaining)
+                if let Ok((_, (val, _, _))) =
+                    tuple::<_, _, (), _>((integer, space0, eof))(remaining)
                 {
-                    let val = val?;
-                    if !matches!(val, Value::Integer(_)) {
-                        return Err(OldTfError::SyntaxError.with_ctx());
-                    }
-
                     Ok(Statement::Directive {
                         name,
-                        args: vec![val],
+                        args: vec![Value::Integer(val?)],
                     })
                 } else {
                     Err(OldTfError::SyntaxError.with_ctx())
                 }
             }
-            "alias" => match tuple::<_, _, (), _>((ident, space0, value, space0, eof))(remaining) {
-                Ok((_, (aname, _, val, _, _))) => {
-                    let val = val?;
-                    if !matches!(val, Value::Integer(_)) {
-                        return Err(OldTfError::SyntaxError.with_ctx());
-                    }
-
-                    Ok(Statement::Directive {
-                        name,
-                        args: vec![Value::Constant(aname), val],
-                    })
-                }
+            "alias" => match tuple::<_, _, (), _>((ident, space0, integer, space0, eof))(remaining)
+            {
+                Ok((_, (aname, _, val, _, _))) => Ok(Statement::Directive {
+                    name,
+                    args: vec![Value::Constant(aname), Value::Integer(val?)],
+                }),
                 Err(_) => Err(OldTfError::SyntaxError.with_ctx()),
             },
             "include" => Ok(Statement::Directive {
@@ -76,8 +65,27 @@ pub fn read_statement(input: &str) -> Result<Statement> {
             value: value?,
         });
     } else {
-        // commands
-        todo!()
+        let (_, (cmd, arg0, args, _, _)) = tuple::<_, _, (), _>((
+            cmd_name,
+            opt(delimited(pair(space0, tag("<")), value, tag(">"))),
+            opt(pair(
+                space1,
+                separated_list0(tuple((space0, tag(","), space0)), value),
+            )),
+            space0,
+            eof,
+        ))(input)
+        .map_err(|_| OldTfError::SyntaxError.with_ctx())?;
+        let args = args.map(|c| c.1).unwrap_or(vec![]);
+        return Ok(Statement::Command(Command {
+            cmd: cmd?,
+            arg0: match arg0 {
+                Some(Err(e)) => Err(e)?,
+                Some(Ok(c)) => Some(c),
+                None => None,
+            },
+            args: args.into_iter().collect::<Result<Vec<_>>>()?,
+        }));
     }
 }
 
@@ -98,16 +106,40 @@ pub fn int_ok<'a, E: ParseError<&'a str>>(
     val: &str,
     radix: u32,
     remaining: &'a str,
-) -> (&'a str, Result<Value>) {
+) -> (&'a str, Result<i32>) {
     (
         remaining,
-        crate::read_anysign_int(val, radix)
-            .map(Value::Integer)
-            .map_err(Into::into),
+        crate::read_anysign_int(val, radix).map_err(Into::into),
     )
 }
 
-pub fn value<'a, E: nom::error::ParseError<&'a str> + Debug>(
+pub fn integer<'a, E: nom::error::ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&str, Result<i32>, E> {
+    let (remaining, val) = digit1::<_, E>(input)?;
+    Ok(
+        if let Ok((remaining, (_, val))) = tuple((tag("0x"), hex_digit1::<_, E>))(input) {
+            int_ok::<E>(val, 16, remaining)
+        } else if let Ok((remaining, (_, val))) = tuple((tag("0b"), bin_digit1::<_, E>))(input) {
+            int_ok::<E>(val, 2, remaining)
+        } else {
+            int_ok::<E>(val, 10, remaining)
+        },
+    )
+}
+
+pub fn cmd_name<'a, E: nom::error::ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&str, Result<CommandName>, E> {
+    if let Ok((remaining, val)) = integer::<E>(input) {
+        Ok((remaining, val.map(CommandName::Raw)))
+    } else {
+        let (remaining, val) = ident(input)?;
+        Ok((remaining, Ok(CommandName::Named(val))))
+    }
+}
+
+pub fn value<'a, E: nom::error::ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&str, Result<Value>, E> {
     let out: Value;
@@ -132,20 +164,12 @@ pub fn value<'a, E: nom::error::ParseError<&'a str> + Debug>(
             is_unicode,
         };
         rem = remaining;
-    } else if let Ok((remaining, val)) = digit1::<_, E>(input) {
-        // integer, check all types
-        let o = if let Ok((remaining, (_, val))) = tuple((tag("0x"), hex_digit1::<_, E>))(input) {
-            int_ok::<E>(val, 16, remaining)
-        } else if let Ok((remaining, (_, val))) = tuple((tag("0b"), bin_digit1::<_, E>))(input) {
-            int_ok::<E>(val, 2, remaining)
+    } else if let Ok((remaining, val)) = integer::<E>(input) {
+        if let Ok(c) = val {
+            rem = remaining;
+            out = Value::Integer(c);
         } else {
-            int_ok::<E>(val, 10, remaining)
-        };
-        rem = o.0;
-        out = if let Ok(c) = o.1 {
-            c
-        } else {
-            return Ok(o);
+            return Ok((remaining, val.map(|_| unreachable!())));
         }
     } else if let Ok((remaining, val)) = ident::<E>(input) {
         out = Value::Constant(val);

@@ -18,6 +18,8 @@ pub fn main() {
         old::parsing::read_statement("#index 0x69"),
         old::parsing::read_statement("#alias yourmom 0"),
         old::parsing::read_statement("#include thisShouldBeAString.tickflow"),
+        old::parsing::read_statement("0 1, 2, 3, \"4\", five"),
+        old::parsing::read_statement("cmdname<2>"),
     ];
     for b in a {
         match b {
