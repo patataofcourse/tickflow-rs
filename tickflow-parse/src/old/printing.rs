@@ -3,7 +3,26 @@ use std::fmt::Display;
 impl Display for super::Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Command(c) => write!(f, "{c}"),
+            Self::Command { cmd, arg0, args } => write!(
+                f,
+                "{}{}{}",
+                cmd,
+                if let Some(c) = arg0 {
+                    format!("<{c}>")
+                } else {
+                    String::new()
+                },
+                if args.is_empty() {
+                    String::new()
+                } else {
+                    " ".to_string()
+                        + &args
+                            .iter()
+                            .map(|c| c.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                }
+            ),
             Self::Label(l) => write!(f, "{}:", **l),
             Self::Directive { name, args } => {
                 write!(
@@ -28,32 +47,6 @@ impl Display for super::Statement {
                 write!(f, "{} = {}", **name, value)
             }
         }
-    }
-}
-
-impl Display for super::Command {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}{}{}",
-            self.cmd,
-            if let Some(c) = &self.arg0 {
-                format!("<{c}>")
-            } else {
-                String::new()
-            },
-            if self.args.is_empty() {
-                String::new()
-            } else {
-                " ".to_string()
-                    + &self
-                        .args
-                        .iter()
-                        .map(|c| c.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-            }
-        )
     }
 }
 

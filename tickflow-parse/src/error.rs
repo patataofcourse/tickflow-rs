@@ -6,9 +6,11 @@ use thiserror::Error;
 pub enum Error {
     #[error("regex library error: {0}")]
     RegexError(regex::Error),
+    #[error("file IO error: {0}")]
+    IoError(std::io::Error),
     //TODO: store line numbers
-    #[error("tickflow error: {0}")]
-    OldTfError(OldTfError),
+    #[error("tickflow error on line {1}: {0}")]
+    OldTfError(OldTfError, usize),
 }
 
 pub fn nom_ok<I, O, E: nom::error::ParseError<I>>(
@@ -42,9 +44,8 @@ pub enum OldTfError {
 }
 
 impl OldTfError {
-    //TODO: make this add the line
-    pub fn with_ctx(self) -> Error {
-        Error::OldTfError(self)
+    pub fn with_ctx(self, line_num: usize) -> Error {
+        Error::OldTfError(self, line_num)
     }
 }
 
@@ -54,15 +55,15 @@ impl From<regex::Error> for Error {
     }
 }
 
-impl From<IntErrorKind> for Error {
-    fn from(value: IntErrorKind) -> Self {
-        Self::OldTfError(value.into())
-    }
-}
-
 impl From<IntErrorKind> for OldTfError {
     fn from(_: IntErrorKind) -> Self {
         Self::IntOutOfRange
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(value: std::io::Error) -> Self {
+        Self::IoError(value)
     }
 }
 

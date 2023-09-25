@@ -2,7 +2,7 @@
 members = ["tickflow-parse"]
 
 [package]
-name = "tickflow-rs"
+name = "tickflow"
 authors = ["patataofcourse"]
 description = "Rust library to manage Tickflow (Rhythm Heaven bytecode) formats."
 version = "0.0.0"

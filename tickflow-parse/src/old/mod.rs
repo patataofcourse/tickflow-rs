@@ -1,23 +1,31 @@
-use std::{collections::HashMap, ops::Deref};
+//! Tickflow (.tickflow / .tkm) language support
+//!
+//! How to use:
+//! 1. Run [`parse_from_text`] on your text file/string value
+//! 2. Run the output `Vec<Statement>`, which is a Rust representation of the raw contents of the file, through [Context::parse_file]
+//! 3. Use some other library (such as `tickflow-binaries`) to convert to Tickompiler binary or BTKS
+
+use std::ops::Deref;
 
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{error::OldTfError, Result};
 
+/// [nom] parsers for Tickflow syntax
 pub mod parsing;
-pub mod printing;
+
+pub use parsing::parse_from_text;
+
+/// This module doesn't include any new items, just Display definitions for Value, Statement, etc.
+mod printing;
 
 #[derive(Debug, Clone)]
 pub struct Context {
     pub index: Option<i32>,
     pub start: [Option<usize>; 2],
-    pub constants: HashMap<Identifier, ParsedValue>,
-    pub aliases: HashMap<Identifier, i32>,
 
-    //TODO: labels should be processed before parsed_cmds is fully done, for lookahead
-    pub parsed_cmds: Vec<ParsedCommand>,
-    pub labels: HashMap<Identifier, usize>,
+    pub parsed_cmds: Vec<ParsedStatement>,
 }
 
 lazy_static! {
@@ -36,10 +44,10 @@ impl Deref for Identifier {
 }
 
 impl Identifier {
-    pub fn new(contents: impl ToString) -> Result<Self> {
+    pub fn new(contents: impl ToString, line_num: usize) -> Result<Self> {
         let contents = contents.to_string();
         if !IDENTIFIER_REGEX.is_match(&contents) {
-            Err(OldTfError::InvalidIdentifier(contents).with_ctx())?
+            Err(OldTfError::InvalidIdentifier(contents).with_ctx(line_num))?
         } else {
             Ok(Self(contents))
         }
@@ -68,6 +76,7 @@ pub enum Value {
 pub enum ParsedValue {
     Integer(i32),
     String { value: String, is_unicode: bool },
+    Label(String),
 }
 
 #[derive(Debug, Clone)]
@@ -85,24 +94,30 @@ pub enum Operation {
 
 #[derive(Debug, Clone)]
 pub enum Statement {
-    Directive { name: Identifier, args: Vec<Value> },
-    Constant { name: Identifier, value: Value },
+    Directive {
+        name: Identifier,
+        args: Vec<Value>,
+    },
+    Constant {
+        name: Identifier,
+        value: Value,
+    },
     Label(Identifier),
-    Command(Command),
+    Command {
+        cmd: CommandName,
+        arg0: Option<Value>,
+        args: Vec<Value>,
+    },
 }
 
 #[derive(Debug, Clone)]
-pub struct Command {
-    pub cmd: CommandName,
-    pub arg0: Option<Value>,
-    pub args: Vec<Value>,
-}
-
-#[derive(Debug, Clone)]
-pub struct ParsedCommand {
-    pub cmd: CommandName,
-    pub arg0: Option<ParsedValue>,
-    pub args: Vec<ParsedValue>,
+pub enum ParsedStatement {
+    Label(String),
+    Command {
+        cmd: CommandName,
+        arg0: Option<ParsedValue>,
+        args: Vec<ParsedValue>,
+    },
 }
 
 #[derive(Debug, Clone)]

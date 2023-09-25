@@ -1,4 +1,3 @@
-/// "Old tickflow", .tickflow / .tkm / Tickompiler tickflow
 pub mod old;
 
 pub mod error;
