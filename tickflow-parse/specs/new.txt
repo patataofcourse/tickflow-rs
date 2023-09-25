@@ -1,5 +1,5 @@
 ### TICKFLOW2 / NEW TICKFLOW* SPECIFICATION ###
-=> version 0.1.0-draft4
+=> version 0.1.0-draft5
 
 * Tickflow2 and New Tickflow are working/wip names
 
@@ -40,7 +40,7 @@ there's the following types of values:
         - sub
         - sync
         - const
-        - if, if_eq, if_ne, if_gt, if_ge, if_lt, if_le
+        - if
         - else
         - switch
         - case
@@ -126,14 +126,16 @@ there's the following kinds of statements:
             * NOTE: since tickflow usually works with a conditional variable, condition-based statements work by applying a specific comparison to that specific variable and a given constant value (condition)
                 - if this ever changes (for example, in a "Rhythm Heaven 5" where it STILL USES TICKFLOW), the spec may be updated
                 - strings and arrays CANNOT be compared to each other unless the language SPECIFICALLY features string/array comparison
-            - if / else if / else statements (including if_eq, if_ne, etc. variants)
-                if $condition {
+            - if / else if / else statements
+                if $op $condition {
                     ...
-                } else if_lt $condition {
+                } else if $op $condition {
                     ...
                 } else {
                     ...
                 }
+                * operations: == (equal), != (not equal), > (greater than), < (less than), >= (greater or equal than), <= (lesser or equal than)
+                * specifying no operation
             - switch / case statements
                 switch {
                     case $condition:
@@ -160,10 +162,11 @@ there's the following kinds of statements:
                     ...
                 }
                 * this will make the loop go on forever until it is killed (kill_loc, kill_cat, engine switching, etc.)
-            - conditional loops (including while_eq, while_ne, etc. variants)
-                while $condition {
+            - conditional loops
+                while $op $condition {
                     ...
                 }
+                * same operations as if statements
                 * this will repeat the code inside the loop until the conditional variable succeeds in the comparison
 - constant definitions: sets a variable to a certain value, to be used by the file anywhere else
     - form is "const $name = $value"
