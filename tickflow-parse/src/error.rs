@@ -8,7 +8,6 @@ pub enum Error {
     RegexError(regex::Error),
     #[error("file IO error: {0}")]
     IoError(std::io::Error),
-    //TODO: store line numbers
     #[error("tickflow error on line {1}: {0}")]
     OldTfError(OldTfError, usize),
 }
@@ -33,7 +32,7 @@ impl Error {
 pub enum OldTfError {
     #[error("invalid identifier name \"{0}\"")]
     InvalidIdentifier(String),
-    #[error("unknown directive \"{}\"", **_0)]
+    #[error("unknown directive \"#{}\"", **_0)]
     InvalidDirective(crate::old::Identifier),
     #[error("invalid string prefix {0}\"\"")]
     InvalidStrPrefix(String),
@@ -41,6 +40,10 @@ pub enum OldTfError {
     IntOutOfRange,
     #[error("syntax error")]
     SyntaxError,
+    #[error("missing required directive \"#{0}\"")]
+    MissingRequiredDirective(&'static str),
+    #[error("included files cannot have #index, #start, or #assets directives")]
+    IncludedDirective,
 }
 
 impl OldTfError {
