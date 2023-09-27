@@ -20,7 +20,7 @@ pub fn main() {
         old::parsing::read_statement("#index 0x69", 14),
         old::parsing::read_statement("#alias yourmom 0", 15),
         old::parsing::read_statement("#include thisShouldBeAString.tickflow", 16),
-        old::parsing::read_statement("0 1, 2, 3, \"4\", five", 17),
+        old::parsing::read_statement("0 1, 2, -3, \"4\", five", 17),
         old::parsing::read_statement("cmdname<2>", 18),
     ];
     for b in a {

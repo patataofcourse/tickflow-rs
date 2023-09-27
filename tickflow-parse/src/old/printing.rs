@@ -31,7 +31,7 @@ impl Display for super::Statement {
                     **name,
                     // include doesn't take a string as a value which is absolute fuckery
                     if **name == "include" {
-                        let super::Value::String {value, ..} = &args[0] else {
+                        let super::Value::String { value, .. } = &args[0] else {
                             panic!("old tickflow: #include was given a non-string argument, which was then not validated")
                         };
                         value.clone()
@@ -75,6 +75,7 @@ impl Display for super::Value {
                 if *is_unicode { "u" } else { "" },
                 crate::create_escapes(value)
             ),
+            Self::Negated(c) => write!(f, "-{}", c),
             //TODO: add ability to change hex-ness situationally
             Self::Integer(c) => {
                 if c.abs() > 9 {

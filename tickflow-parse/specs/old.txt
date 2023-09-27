@@ -19,6 +19,7 @@ you can apply operations to integers:
 - bitwise OR: a | b
 - bitwise XOR: a ^ b
 - negation: -a
+you can use (brackets) to change the order of operations
 
 each statement takes up a line
 a line can be empty

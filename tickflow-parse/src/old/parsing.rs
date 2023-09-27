@@ -168,9 +168,18 @@ pub fn value<'a, E: nom::error::ParseError<&'a str>>(
     move |input| {
         let out: Value;
         let rem: &str;
-        //TODO: negation
+        //TODO: order of operations + brackets
 
-        if let Ok((remaining, value)) = re_capture::<E>(STRING_REGEX.clone())(input) {
+        if let Ok((remaining, (_, _, val))) =
+            tuple::<_, _, E, _>((tag("-"), space0, value(line_num)))(input)
+        {
+            let val = match val {
+                Ok(c) => c,
+                Err(e) => return Ok((input, Err(e))),
+            };
+            rem = remaining;
+            out = Value::Negated(Box::new(val));
+        } else if let Ok((remaining, value)) = re_capture::<E>(STRING_REGEX.clone())(input) {
             let mut is_unicode = false;
 
             match value[1] {

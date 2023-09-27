@@ -64,6 +64,7 @@ pub enum Value {
         op: Operation,
         values: [Box<Value>; 2],
     },
+    Negated(Box<Value>),
     Constant(Identifier),
     Integer(i32),
     String {
@@ -184,7 +185,7 @@ impl Context {
         for st in statements {
             match st {
                 Statement::Constant { name, value } => {
-                    constants.insert(name, value);
+                    constants.insert(name, Self::parse_value(&constants, value)?);
                 }
                 Statement::Label(c) => {
                     let position = {
@@ -199,11 +200,46 @@ impl Context {
                     out.parsed_cmds
                         .push(ParsedStatement::Label((*c).clone(), position))
                 }
-                Statement::Command { cmd, arg0, args } => todo!(),
+                Statement::Command { cmd, arg0, args } => {
+                    let cmd = match &cmd {
+                        CommandName::Raw(_) => cmd,
+                        CommandName::Named(c) => {
+                            if let Some(c) = aliases.get(c) {
+                                CommandName::Raw(*c)
+                            } else {
+                                cmd
+                            }
+                        }
+                    };
+                    let arg0 = if let Some(c) = arg0 {
+                        Some(Self::parse_value(&constants, c)?)
+                    } else {
+                        None
+                    };
+                    let args = args
+                        .into_iter()
+                        .map(|c| Self::parse_value(&constants, c))
+                        .collect::<Result<_>>()?;
+                    out.parsed_cmds
+                        .push(ParsedStatement::Command { cmd, arg0, args })
+                }
                 Statement::Directive { .. } => unreachable!(),
             }
         }
         todo!()
+    }
+
+    fn parse_value(
+        constants: &HashMap<Identifier, ParsedValue>,
+        value: Value,
+    ) -> Result<ParsedValue> {
+        match value {
+            Value::Operation { op, values } => todo!(),
+            Value::Negated(c) => todo!(),
+            Value::Constant(c) => todo!(),
+            Value::Integer(c) => Ok(ParsedValue::Integer(c)),
+            Value::String { value, is_unicode } => Ok(ParsedValue::String { value, is_unicode }),
+        }
     }
 }
 
@@ -216,7 +252,6 @@ struct DirectiveResult {
 }
 
 impl Context {
-    //TODO: make the return type a struct or smth
     fn preprocess_directives(
         statements: Vec<Statement>,
         include_fn: impl Fn(String) -> Box<dyn Read>,
