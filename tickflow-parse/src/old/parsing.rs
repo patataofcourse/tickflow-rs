@@ -5,6 +5,7 @@ use nom::{
     bytes::complete::tag,
     character::complete::{digit1, hex_digit1, space0, space1},
     combinator::{eof, opt},
+    error::ErrorKind as NomErrorKind,
     error::ParseError,
     multi::separated_list0,
     sequence::{delimited, pair, tuple},
@@ -170,7 +171,19 @@ pub fn value<'a, E: nom::error::ParseError<&'a str>>(
         let rem: &str;
         //TODO: order of operations + brackets
 
-        if let Ok((remaining, (_, _, val))) =
+        if let Ok((remaining, (_, val, _, _))) = with_matching_brackets(
+            '(',
+            ')',
+            tuple::<_, _, E, _>((space0, value(line_num), space0, eof)),
+        )(input)
+        {
+            let val = match val {
+                Ok(c) => c,
+                Err(e) => return Ok((input, Err(e))),
+            };
+            rem = remaining;
+            out = val;
+        } else if let Ok((remaining, (_, _, val))) =
             tuple::<_, _, E, _>((tag("-"), space0, value(line_num)))(input)
         {
             let val = match val {
@@ -242,5 +255,50 @@ pub fn value<'a, E: nom::error::ParseError<&'a str>>(
         } else {
             nom_ok(out, rem)
         }
+    }
+}
+
+pub fn with_matching_brackets<'a, O, E: ParseError<&'a str>>(
+    opening: char,
+    closing: char,
+    mut inner: impl FnMut(&'a str) -> IResult<&'a str, O, E>,
+) -> impl FnMut(&'a str) -> IResult<&'a str, O, E> {
+    move |input| {
+        // step 1: ensure equal bracketing
+        let mut chars = input.chars();
+        let mut depth = 1;
+        let mut captured = 0;
+        if let Some(c) = chars.next() {
+            if opening != c {
+                return Err(nom::Err::Error(E::from_error_kind(
+                    input,
+                    NomErrorKind::Char,
+                )));
+            }
+        } else {
+            return Err(nom::Err::Error(E::from_error_kind(
+                input,
+                NomErrorKind::Eof,
+            )));
+        }
+        while depth > 0 {
+            let c = chars.next().ok_or(nom::Err::Error(E::from_error_kind(
+                input,
+                NomErrorKind::Eof,
+            )))?;
+            match &c {
+                c if c == &opening => depth += 1,
+                c if c == &closing => depth -= 1,
+                _ => (),
+            }
+            if depth > 0 {
+                captured += 1
+            }
+        }
+        println!("{:?}", &input[1..1 + captured]);
+
+        // step 2: match the inner
+        let remaining = chars.as_str();
+        inner(&input[1..1 + captured]).map(|(_, val)| (remaining, val))
     }
 }
