@@ -4,8 +4,6 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("regex library error: {0}")]
-    RegexError(regex::Error),
     #[error("file IO error: {0}")]
     IoError(std::io::Error),
     #[error("tickflow error on line {1}: {0}")]
@@ -28,6 +26,7 @@ impl Error {
     }
 }
 
+//TODO: specify filename for includes
 #[derive(Debug, Error)]
 pub enum OldTfError {
     #[error("invalid identifier name \"{0}\"")]
@@ -44,17 +43,15 @@ pub enum OldTfError {
     MissingRequiredDirective(&'static str),
     #[error("included files cannot have #index, #start, or #assets directives")]
     IncludedDirective,
+    #[error("undefined constant \"{}\"", **_0)]
+    UndefinedConstant(crate::old::Identifier),
+    #[error("operations can only be applied to integers")]
+    InvalidOpType,
 }
 
 impl OldTfError {
     pub fn with_ctx(self, line_num: usize) -> Error {
         Error::OldTfError(self, line_num)
-    }
-}
-
-impl From<regex::Error> for Error {
-    fn from(value: regex::Error) -> Self {
-        Self::RegexError(value)
     }
 }
 

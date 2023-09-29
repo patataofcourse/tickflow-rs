@@ -2,7 +2,7 @@
 //!
 //! How to use:
 //! 1. Run [`parse_from_text`] on your text file/string value
-//! 2. Run the output `Vec<Statement>`, which is a Rust representation of the raw contents of the file, through [Context::parse_file]
+//! 2. Run the output `Vec<(usize, Statement)>`, which is a Rust representation of the raw contents of the file, through [Context::parse_file]
 //! 3. Use some other library (such as `tickflow-binaries`) to convert to Tickompiler binary or BTKS
 
 use std::{collections::HashMap, io::Read, ops::Deref};
@@ -152,7 +152,7 @@ pub enum CommandName {
 
 impl Context {
     pub fn parse_file(
-        statements: Vec<Statement>,
+        statements: Vec<(usize, Statement)>,
         include_fn: impl Fn(String) -> Box<dyn Read>,
     ) -> Result<Self> {
         let mut constants = HashMap::new();
@@ -182,10 +182,10 @@ impl Context {
         };
 
         // read file
-        for st in statements {
+        for (l, st) in statements {
             match st {
                 Statement::Constant { name, value } => {
-                    constants.insert(name, Self::parse_value(&constants, value)?);
+                    constants.insert(name, Self::parse_value(&constants, value, l)?);
                 }
                 Statement::Label(c) => {
                     let position = {
@@ -212,13 +212,13 @@ impl Context {
                         }
                     };
                     let arg0 = if let Some(c) = arg0 {
-                        Some(Self::parse_value(&constants, c)?)
+                        Some(Self::parse_value(&constants, c, l)?)
                     } else {
                         None
                     };
                     let args = args
                         .into_iter()
-                        .map(|c| Self::parse_value(&constants, c))
+                        .map(|c| Self::parse_value(&constants, c, l))
                         .collect::<Result<_>>()?;
                     out.parsed_cmds
                         .push(ParsedStatement::Command { cmd, arg0, args })
@@ -232,11 +232,20 @@ impl Context {
     fn parse_value(
         constants: &HashMap<Identifier, ParsedValue>,
         value: Value,
+        line_num: usize,
     ) -> Result<ParsedValue> {
+        // difference from what Tickompiler does - labels, instead of being treated as integers with
+        // special metadata, are their own type, so operations don't apply to them
         match value {
             Value::Operation { op, values } => todo!(),
-            Value::Negated(c) => todo!(),
-            Value::Constant(c) => todo!(),
+            Value::Negated(c) => match Self::parse_value(constants, *c, line_num)? {
+                ParsedValue::Integer(c) => Ok(ParsedValue::Integer(-c)),
+                _ => Err(OldTfError::InvalidOpType.with_ctx(line_num))?,
+            },
+            Value::Constant(c) => constants
+                .get(&c)
+                .map(Clone::clone)
+                .ok_or(OldTfError::UndefinedConstant(c).with_ctx(line_num)),
             Value::Integer(c) => Ok(ParsedValue::Integer(c)),
             Value::String { value, is_unicode } => Ok(ParsedValue::String { value, is_unicode }),
         }
@@ -244,7 +253,7 @@ impl Context {
 }
 
 struct DirectiveResult {
-    statements: Vec<Statement>,
+    statements: Vec<(usize, Statement)>,
     index: Option<i32>,
     start: Option<i32>,
     assets: Option<i32>,
@@ -253,7 +262,7 @@ struct DirectiveResult {
 
 impl Context {
     fn preprocess_directives(
-        statements: Vec<Statement>,
+        statements: Vec<(usize, Statement)>,
         include_fn: impl Fn(String) -> Box<dyn Read>,
     ) -> Result<DirectiveResult> {
         let (mut index, mut start, mut assets) = (None, None, None);
@@ -261,7 +270,7 @@ impl Context {
 
         let mut out_statements = vec![];
 
-        for st in statements {
+        for (l, st) in statements {
             if let Statement::Directive { name, args } = st {
                 // slight difference from what tickompiler does for #start/#assets vs start:/assets: but it's such an
                 // edge case no reasonable person should've ever encountered it (and if they have it's a very easy fix)
@@ -292,7 +301,7 @@ impl Context {
                     _ => unreachable!(),
                 }
             } else {
-                out_statements.push(st);
+                out_statements.push((l, st));
             }
         }
         Ok(DirectiveResult {

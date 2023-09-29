@@ -7,7 +7,7 @@ use nom::{
     combinator::{eof, opt},
     error::ErrorKind as NomErrorKind,
     error::ParseError,
-    multi::separated_list0,
+    multi::{many1, separated_list0},
     sequence::{delimited, pair, tuple},
     IResult,
 };
@@ -22,7 +22,7 @@ use crate::{
 
 use super::{CommandName, Identifier, Operation, Statement, Value, IDENTIFIER_REGEX};
 
-pub fn parse_from_text(f: &mut impl Read) -> Result<Vec<Statement>> {
+pub fn parse_from_text(f: &mut impl Read) -> Result<Vec<(usize, Statement)>> {
     let mut text = String::new();
     f.read_to_string(&mut text)?;
 
@@ -31,10 +31,10 @@ pub fn parse_from_text(f: &mut impl Read) -> Result<Vec<Statement>> {
         if line.trim_start().starts_with("//") || line.is_empty() {
             continue;
         }
-        statements.push(read_statement(
-            line.split_once("//").map(|c| c.0).unwrap_or(line).trim(),
+        statements.push((
             i,
-        )?);
+            read_statement(line.split_once("//").map(|c| c.0).unwrap_or(line).trim(), i)?,
+        ));
     }
     Ok(statements)
 }
@@ -167,6 +167,31 @@ pub fn value<'a, E: nom::error::ParseError<&'a str>>(
     line_num: usize,
 ) -> impl Fn(&'a str) -> IResult<&str, Result<Value>, E> {
     move |input| {
+        if let Ok((remaining, (val1, ops))) = tuple::<_, _, E, _>((
+            value_no_ops(line_num),
+            many1(tuple((
+                space0,
+                re_find(OP_REGEX.clone()),
+                space0,
+                value_no_ops(line_num),
+            ))),
+        ))(input)
+        {
+            let val1 = match val1 {
+                Ok(c) => c,
+                Err(e) => return Ok((input, Err(e))),
+            };
+            panic!("{:?} {:?}", val1, ops);
+        } else {
+            value_no_ops(line_num)(input)
+        }
+    }
+}
+
+pub fn value_no_ops<'a, E: nom::error::ParseError<&'a str>>(
+    line_num: usize,
+) -> impl Fn(&'a str) -> IResult<&str, Result<Value>, E> {
+    move |input| {
         let out: Value;
         let rem: &str;
         //TODO: order of operations + brackets
@@ -227,6 +252,7 @@ pub fn value<'a, E: nom::error::ParseError<&'a str>>(
         }
 
         // check for operations
+        /*
         if let Ok((remaining, (_, op, _, val2))) =
             tuple::<_, _, E, _>((space0, re_find(OP_REGEX.clone()), space0, value(line_num)))(rem)
         {
@@ -255,6 +281,8 @@ pub fn value<'a, E: nom::error::ParseError<&'a str>>(
         } else {
             nom_ok(out, rem)
         }
+        */
+        nom_ok(out, rem)
     }
 }
 
