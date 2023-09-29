@@ -12,4 +12,6 @@ some_constant = 90 + 3
 some_label:
     some_command<0> 1, "2", u"3", some_constant * 89 << 3
     rest 0x30 // 1 beat
+    yourmom<9> 2
+    89
     stop
