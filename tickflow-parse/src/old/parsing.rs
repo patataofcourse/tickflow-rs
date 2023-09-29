@@ -8,7 +8,7 @@ use nom::{
     error::ErrorKind as NomErrorKind,
     error::ParseError,
     multi::{many1, separated_list0},
-    sequence::{delimited, pair, tuple},
+    sequence::{pair, tuple},
     IResult,
 };
 use regex::Regex;
@@ -32,8 +32,11 @@ pub fn parse_from_text(f: &mut impl Read) -> Result<Vec<(usize, Statement)>> {
             continue;
         }
         statements.push((
-            i,
-            read_statement(line.split_once("//").map(|c| c.0).unwrap_or(line).trim(), i)?,
+            i + 1,
+            read_statement(
+                line.split_once("//").map(|c| c.0).unwrap_or(line).trim(),
+                i + 1,
+            )?,
         ));
     }
     Ok(statements)
@@ -83,22 +86,28 @@ pub fn read_statement(input: &str, line_num: usize) -> Result<Statement> {
             value: value?,
         });
     } else {
-        let (_, (cmd, arg0, args, _)) = tuple::<_, _, (), _>((
+        let (_, (cmd, arg0, args, _)) = tuple::<_, _, nom::error::Error<_>, _>((
             cmd_name(line_num),
-            opt(delimited(pair(space0, tag("<")), value(line_num), tag(">"))),
+            opt(pair(
+                space0,
+                with_matching_brackets('<', '>', value(line_num)),
+            )),
             opt(pair(
                 space1,
                 separated_list0(tuple((space0, tag(","), space0)), value(line_num)),
             )),
             eof,
         ))(input)
-        .map_err(|_| OldTfError::SyntaxError.with_ctx(line_num))?;
+        .map_err(|c| {
+            println!("{c}");
+            OldTfError::SyntaxError.with_ctx(line_num)
+        })?;
         let args = args.map(|c| c.1).unwrap_or(vec![]);
         return Ok(Statement::Command {
             cmd: cmd?,
             arg0: match arg0 {
-                Some(Err(e)) => Err(e)?,
-                Some(Ok(c)) => Some(c),
+                Some((_, Err(e))) => Err(e)?,
+                Some((_, Ok(c))) => Some(c),
                 None => None,
             },
             args: args.into_iter().collect::<Result<Vec<_>>>()?,
@@ -118,6 +127,13 @@ lazy_static! {
     static ref STRING_REGEX: Regex = Regex::new(r#"^([a-z])?"(([^\\"]|\\.)*)""#).unwrap();
     static ref OP_REGEX: Regex = Regex::new(r"^[+\-*/&|^]|>>|<<").unwrap();
 }
+
+const OP_PRIORITY: &[&[Operation]] = &[
+    &[Operation::Mul, Operation::Div],
+    &[Operation::Add, Operation::Sub],
+    &[Operation::Shl, Operation::Shr],
+    &[Operation::And, Operation::Or, Operation::Xor],
+];
 
 pub fn int_ok<'a, E: ParseError<&'a str>>(
     val: &str,
@@ -167,7 +183,7 @@ pub fn value<'a, E: nom::error::ParseError<&'a str>>(
     line_num: usize,
 ) -> impl Fn(&'a str) -> IResult<&str, Result<Value>, E> {
     move |input| {
-        if let Ok((remaining, (val1, ops))) = tuple::<_, _, E, _>((
+        if let Ok((remaining, (val1, pairs))) = tuple::<_, _, E, _>((
             value_no_ops(line_num),
             many1(tuple((
                 space0,
@@ -181,7 +197,42 @@ pub fn value<'a, E: nom::error::ParseError<&'a str>>(
                 Ok(c) => c,
                 Err(e) => return Ok((input, Err(e))),
             };
-            panic!("{:?} {:?}", val1, ops);
+            let mut values = vec![val1];
+            let mut ops = vec![];
+            for (_, op, _, val) in pairs {
+                let val = match val {
+                    Ok(c) => c,
+                    Err(e) => return Ok((input, Err(e))),
+                };
+                let op = match op {
+                    "+" => Operation::Add,
+                    "-" => Operation::Sub,
+                    "*" => Operation::Mul,
+                    "/" => Operation::Div,
+                    "<<" => Operation::Shl,
+                    ">>" => Operation::Shr,
+                    "|" => Operation::Or,
+                    "&" => Operation::And,
+                    "^" => Operation::Xor,
+                    _ => unreachable!(),
+                };
+                values.push(val);
+                ops.push(op);
+            }
+            for op_type in OP_PRIORITY {
+                while let Some((i, op)) = ops.iter().enumerate().find(|(_, c)| op_type.contains(c))
+                {
+                    let val2 = values.remove(i + 1);
+                    let val1 = &mut values[i];
+                    *val1 = Value::Operation {
+                        op: *op,
+                        values: [Box::new(val1.clone()), Box::new(val2)],
+                    };
+                    ops.remove(i);
+                }
+            }
+            assert!(values.len() == 1 && ops.is_empty());
+            Ok((remaining, Ok(values.remove(0))))
         } else {
             value_no_ops(line_num)(input)
         }
@@ -323,7 +374,6 @@ pub fn with_matching_brackets<'a, O, E: ParseError<&'a str>>(
                 captured += 1
             }
         }
-        println!("{:?}", &input[1..1 + captured]);
 
         // step 2: match the inner
         let remaining = chars.as_str();

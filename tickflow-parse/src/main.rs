@@ -1,9 +1,11 @@
+use std::fs::File;
+
 use tickflow_parse::*;
 
 const TEST_TICKFLOW: &str = include_str!("old/test.tickflow");
 
 pub fn main() {
-    let a = [
+    let a = vec![
         old::parsing::read_statement(r#"name = "\"value\n\\""#, 1),
         old::parsing::read_statement(r#"name = u"\"value\n\\""#, 2),
         old::parsing::read_statement(r#"name = h"\"value\n\\""#, 3),
@@ -21,7 +23,7 @@ pub fn main() {
         old::parsing::read_statement("0 1, (((2))), -3, \"4\", five", 15),
         old::parsing::read_statement("cmdname<2> fa", 16),
     ];
-    for b in a {
+    for b in &a {
         match b {
             Ok(c) => {
                 //println!("{c:?}");
@@ -33,10 +35,24 @@ pub fn main() {
         }
     }
     println!("------");
-    match old::parse_from_text(&mut TEST_TICKFLOW.bytes().collect::<Vec<u8>>().as_slice()) {
+    let b = old::parse_from_text(&mut TEST_TICKFLOW.bytes().collect::<Vec<u8>>().as_slice());
+    match b {
         Ok(c) => {
-            for b in c {
-                println!("{}", b.1)
+            for d in &c {
+                println!("{}", d.1)
+            }
+            println!("--");
+            match old::Context::parse_file(c, File::open) {
+                Ok(d) => {
+                    println!(
+                        "{{ index = {}, start = {}, assets = {} }}",
+                        d.index, d.start[0], d.start[1]
+                    );
+                    for statement in d.parsed_cmds {
+                        println!("{:?}", statement);
+                    }
+                }
+                Err(e) => println!("{e}"),
             }
         }
         Err(e) => println!("{e}"),

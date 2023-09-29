@@ -103,7 +103,7 @@ pub enum ParsedValue {
     Label(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum Operation {
     Add,
     Sub,
@@ -114,6 +114,22 @@ pub enum Operation {
     And,
     Or,
     Xor,
+}
+
+impl Operation {
+    pub fn apply(self, val1: i32, val2: i32) -> i32 {
+        match self {
+            Operation::Add => val1 + val2,
+            Operation::Sub => val1 - val2,
+            Operation::Mul => val1 * val2,
+            Operation::Div => val1 / val2,
+            Operation::Shl => val1 << val2,
+            Operation::Shr => val1 >> val2,
+            Operation::And => val1 & val2,
+            Operation::Or => val1 | val2,
+            Operation::Xor => val1 ^ val2,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -151,9 +167,9 @@ pub enum CommandName {
 }
 
 impl Context {
-    pub fn parse_file(
+    pub fn parse_file<T: Read>(
         statements: Vec<(usize, Statement)>,
-        include_fn: impl Fn(String) -> Box<dyn Read>,
+        include_fn: impl Fn(String) -> std::io::Result<T>,
     ) -> Result<Self> {
         let mut constants = HashMap::new();
 
@@ -163,11 +179,13 @@ impl Context {
             start,
             assets,
             aliases,
-        } = Self::preprocess_directives(statements, include_fn)?;
+        } = Self::preprocess_directives(statements, &include_fn, false)?;
 
         let Some(index) = index else {
             Err(OldTfError::MissingRequiredDirective("index").with_ctx(1))?
         };
+
+        //TODO: detect start and assets labels
         let Some(start) = start else {
             Err(OldTfError::MissingRequiredDirective("start").with_ctx(1))?
         };
@@ -226,7 +244,7 @@ impl Context {
                 Statement::Directive { .. } => unreachable!(),
             }
         }
-        todo!()
+        Ok(out)
     }
 
     fn parse_value(
@@ -237,7 +255,15 @@ impl Context {
         // difference from what Tickompiler does - labels, instead of being treated as integers with
         // special metadata, are their own type, so operations don't apply to them
         match value {
-            Value::Operation { op, values } => todo!(),
+            Value::Operation { op, values } => {
+                let [val1, val2] = values.map(|c| Self::parse_value(constants, *c, line_num));
+
+                if let (ParsedValue::Integer(val1), ParsedValue::Integer(val2)) = (val1?, val2?) {
+                    Ok(ParsedValue::Integer(op.apply(val1, val2)))
+                } else {
+                    Err(OldTfError::InvalidOpType.with_ctx(line_num))?
+                }
+            }
             Value::Negated(c) => match Self::parse_value(constants, *c, line_num)? {
                 ParsedValue::Integer(c) => Ok(ParsedValue::Integer(-c)),
                 _ => Err(OldTfError::InvalidOpType.with_ctx(line_num))?,
@@ -261,9 +287,10 @@ struct DirectiveResult {
 }
 
 impl Context {
-    fn preprocess_directives(
+    fn preprocess_directives<T: Read>(
         statements: Vec<(usize, Statement)>,
-        include_fn: impl Fn(String) -> Box<dyn Read>,
+        include_fn: &impl Fn(String) -> std::io::Result<T>,
+        is_included_file: bool,
     ) -> Result<DirectiveResult> {
         let (mut index, mut start, mut assets) = (None, None, None);
         let mut aliases = HashMap::new();
@@ -281,8 +308,8 @@ impl Context {
                     "alias" => {
                         aliases.insert(args[0].unwrap_constant().clone(), *args[1].unwrap_int());
                     }
-                    "include" => {
-                        let mut included_file = include_fn(args[0].unwrap_string().0.clone());
+                    "include" if !is_included_file => {
+                        let mut included_file = include_fn(args[0].unwrap_string().0.clone())?;
                         let included_file = parse_from_text(&mut included_file)?;
                         let DirectiveResult {
                             statements: included_file,
@@ -290,13 +317,16 @@ impl Context {
                             start,
                             assets,
                             aliases: included_aliases,
-                        } = Self::preprocess_directives(included_file, &include_fn)?;
+                        } = Self::preprocess_directives(included_file, include_fn, true)?;
 
                         let (None, None, None) = (index, start, assets) else {
                             Err(OldTfError::IncludedDirective.with_ctx(1))?
                         };
                         out_statements.extend(included_file);
                         aliases.extend(included_aliases);
+                    }
+                    "include" if is_included_file => {
+                        Err(OldTfError::IncludedDirective.with_ctx(1))?
                     }
                     _ => unreachable!(),
                 }
