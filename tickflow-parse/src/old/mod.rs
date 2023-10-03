@@ -3,7 +3,7 @@
 //! How to use:
 //! 1. Run [`parse_from_text`] on your text file/string value
 //! 2. Run the output `Vec<(usize, Statement)>`, which is a Rust representation of the raw contents of the file, through [Context::parse_file]
-//! 3. Use some other library (such as `tickflow-binaries`) to convert to Tickompiler binary or BTKS
+//! 3. You can use the outputted `Vec<ParsedStatement>` with the main `tickflow` library
 
 //TODO: split the entire module in more files
 
