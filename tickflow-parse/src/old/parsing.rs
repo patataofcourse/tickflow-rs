@@ -245,7 +245,6 @@ pub fn value_no_ops<'a, E: nom::error::ParseError<&'a str>>(
     move |input| {
         let out: Value;
         let rem: &str;
-        //TODO: order of operations + brackets
 
         if let Ok((remaining, (_, val, _, _))) = with_matching_brackets(
             '(',

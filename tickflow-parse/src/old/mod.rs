@@ -5,6 +5,8 @@
 //! 2. Run the output `Vec<(usize, Statement)>`, which is a Rust representation of the raw contents of the file, through [Context::parse_file]
 //! 3. Use some other library (such as `tickflow-binaries`) to convert to Tickompiler binary or BTKS
 
+//TODO: split the entire module in more files
+
 use std::{collections::HashMap, io::Read, ops::Deref};
 
 use lazy_static::lazy_static;
@@ -185,19 +187,7 @@ impl Context {
             Err(OldTfError::MissingRequiredDirective("index").with_ctx(1))?
         };
 
-        //TODO: detect start and assets labels
-        let Some(start) = start else {
-            Err(OldTfError::MissingRequiredDirective("start").with_ctx(1))?
-        };
-        let Some(assets) = assets else {
-            Err(OldTfError::MissingRequiredDirective("assets").with_ctx(1))?
-        };
-
-        let mut out = Self {
-            index,
-            start: [start, assets],
-            parsed_cmds: vec![],
-        };
+        let mut parsed_cmds = vec![];
 
         // read file
         for (l, st) in statements {
@@ -208,15 +198,14 @@ impl Context {
                 Statement::Label(c) => {
                     let position = {
                         let mut size = 0;
-                        for a in &out.parsed_cmds {
+                        for a in &parsed_cmds {
                             if let ParsedStatement::Command { args, .. } = a {
                                 size += 4 * (1 + args.len())
                             }
                         }
                         size
                     };
-                    out.parsed_cmds
-                        .push(ParsedStatement::Label((*c).clone(), position))
+                    parsed_cmds.push(ParsedStatement::Label((*c).clone(), position))
                 }
                 Statement::Command { cmd, arg0, args } => {
                     let cmd = match &cmd {
@@ -238,13 +227,55 @@ impl Context {
                         .into_iter()
                         .map(|c| Self::parse_value(&constants, c, l))
                         .collect::<Result<_>>()?;
-                    out.parsed_cmds
-                        .push(ParsedStatement::Command { cmd, arg0, args })
+                    parsed_cmds.push(ParsedStatement::Command { cmd, arg0, args })
                 }
                 Statement::Directive { .. } => unreachable!(),
             }
         }
-        Ok(out)
+
+        let find_label = |lname| {
+            move |c: &ParsedStatement| {
+                if let ParsedStatement::Label(name, pos) = c {
+                    if name == lname {
+                        Some(*pos)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+        };
+
+        let start = if let Some(c) = start {
+            c
+        } else if let Some(Some(pos)) = parsed_cmds
+            .iter()
+            .map(find_label("start"))
+            .find(Option::is_some)
+        {
+            pos as i32
+        } else {
+            Err(OldTfError::MissingRequiredDirective("start").with_ctx(1))?
+        };
+
+        let assets = if let Some(c) = assets {
+            c
+        } else if let Some(Some(pos)) = parsed_cmds
+            .iter()
+            .map(find_label("assets"))
+            .find(Option::is_some)
+        {
+            pos as i32
+        } else {
+            Err(OldTfError::MissingRequiredDirective("assets").with_ctx(1))?
+        };
+
+        Ok(Self {
+            index,
+            start: [start, assets],
+            parsed_cmds,
+        })
     }
 
     fn parse_value(
@@ -341,5 +372,30 @@ impl Context {
             assets,
             aliases,
         })
+    }
+}
+
+// Not sure if these will ever actually be needed
+
+impl From<ParsedStatement> for Statement {
+    fn from(value: ParsedStatement) -> Self {
+        match value {
+            ParsedStatement::Label(name, _) => Statement::Label(Identifier(name)),
+            ParsedStatement::Command { cmd, arg0, args } => Statement::Command {
+                cmd,
+                arg0: arg0.map(Into::into),
+                args: args.iter().map(|c| c.clone().into()).collect(),
+            },
+        }
+    }
+}
+
+impl From<ParsedValue> for Value {
+    fn from(value: ParsedValue) -> Self {
+        match value {
+            ParsedValue::Integer(c) => Value::Integer(c),
+            ParsedValue::String { value, is_unicode } => Value::String { value, is_unicode },
+            ParsedValue::Label(c) => Value::Constant(Identifier(c)),
+        }
     }
 }
