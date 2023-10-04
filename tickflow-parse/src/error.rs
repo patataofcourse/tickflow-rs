@@ -47,6 +47,10 @@ pub enum OldTfError {
     UndefinedConstant(crate::old::Identifier),
     #[error("operations can only be applied to integers")]
     InvalidOpType,
+    #[error("arg0 of any command must be an integer")]
+    InvalidArg0Type,
+    #[error("arg0 value {0:05x} is out of range (must be 18 bits at most)")]
+    OOBArg0(i32),
 }
 
 impl OldTfError {

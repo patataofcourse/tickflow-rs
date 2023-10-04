@@ -157,7 +157,7 @@ pub enum ParsedStatement {
     Label(String, usize),
     Command {
         cmd: CommandName,
-        arg0: Option<ParsedValue>,
+        arg0: Option<u32>,
         args: Vec<ParsedValue>,
     },
 }
@@ -219,7 +219,12 @@ impl Context {
                         }
                     };
                     let arg0 = if let Some(c) = arg0 {
-                        Some(Self::parse_value(&constants, c, l)?)
+                        //TODO: arg0 must be Integer
+                        match Self::parse_value(&constants, c, l)? {
+                            ParsedValue::Integer(c) if c == c & ((1 << 18) - 1) => Some(c as u32),
+                            ParsedValue::Integer(c) => Err(OldTfError::OOBArg0(c).with_ctx(l))?,
+                            _ => Err(OldTfError::InvalidArg0Type.with_ctx(l))?,
+                        }
                     } else {
                         None
                     };
@@ -383,7 +388,7 @@ impl From<ParsedStatement> for Statement {
             ParsedStatement::Label(name, _) => Statement::Label(Identifier(name)),
             ParsedStatement::Command { cmd, arg0, args } => Statement::Command {
                 cmd,
-                arg0: arg0.map(Into::into),
+                arg0: arg0.map(|a0| Value::Integer(a0 as i32)),
                 args: args.iter().map(|c| c.clone().into()).collect(),
             },
         }
