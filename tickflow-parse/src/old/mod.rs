@@ -304,10 +304,11 @@ impl Context {
                 ParsedValue::Integer(c) => Ok(ParsedValue::Integer(-c)),
                 _ => Err(OldTfError::InvalidOpType.with_ctx(line_num))?,
             },
-            Value::Constant(c) => constants
+            //TODO: ensure all labels used exist
+            Value::Constant(c) => Ok(constants
                 .get(&c)
                 .map(Clone::clone)
-                .ok_or(OldTfError::UndefinedConstant(c).with_ctx(line_num)),
+                .unwrap_or(ParsedValue::Label(c.0))),
             Value::Integer(c) => Ok(ParsedValue::Integer(c)),
             Value::String { value, is_unicode } => Ok(ParsedValue::String { value, is_unicode }),
         }
