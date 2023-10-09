@@ -46,7 +46,13 @@ pub fn main() {
                 Ok(d) => {
                     println!(
                         "{{ index = {}, start = {}, assets = {} }}",
-                        d.index, d.start[0], d.start[1]
+                        d.index,
+                        d.start[0]
+                            .map(|c| c.to_string())
+                            .unwrap_or(String::from("[label]")),
+                        d.start[1]
+                            .map(|c| c.to_string())
+                            .unwrap_or(String::from("[label]"))
                     );
                     for statement in d.parsed_cmds {
                         println!("{:?}", statement);

@@ -25,7 +25,7 @@ mod printing;
 #[derive(Debug, Clone)]
 pub struct Context {
     pub index: i32,
-    pub start: [i32; 2],
+    pub start: [Option<i32>; 2],
 
     pub parsed_cmds: Vec<ParsedStatement>,
 }
@@ -154,7 +154,7 @@ pub enum Statement {
 
 #[derive(Debug, Clone)]
 pub enum ParsedStatement {
-    Label(String, usize),
+    Label(String),
     Command {
         cmd: CommandName,
         arg0: Option<u32>,
@@ -195,18 +195,7 @@ impl Context {
                 Statement::Constant { name, value } => {
                     constants.insert(name, Self::parse_value(&constants, value, l)?);
                 }
-                Statement::Label(c) => {
-                    let position = {
-                        let mut size = 0;
-                        for a in &parsed_cmds {
-                            if let ParsedStatement::Command { args, .. } = a {
-                                size += 4 * (1 + args.len())
-                            }
-                        }
-                        size
-                    };
-                    parsed_cmds.push(ParsedStatement::Label((*c).clone(), position))
-                }
+                Statement::Label(c) => parsed_cmds.push(ParsedStatement::Label(c.0)),
                 Statement::Command { cmd, arg0, args } => {
                     let cmd = match &cmd {
                         CommandName::Raw(_) => cmd,
@@ -240,9 +229,9 @@ impl Context {
 
         let find_label = |lname| {
             move |c: &ParsedStatement| {
-                if let ParsedStatement::Label(name, pos) = c {
+                if let ParsedStatement::Label(name) = c {
                     if name == lname {
-                        Some(*pos)
+                        Some(())
                     } else {
                         None
                     }
@@ -253,25 +242,25 @@ impl Context {
         };
 
         let start = if let Some(c) = start {
-            c
-        } else if let Some(Some(pos)) = parsed_cmds
+            Some(c)
+        } else if let Some(Some(_)) = parsed_cmds
             .iter()
             .map(find_label("start"))
             .find(Option::is_some)
         {
-            pos as i32
+            None
         } else {
             Err(OldTfError::MissingRequiredDirective("start").with_ctx(1))?
         };
 
         let assets = if let Some(c) = assets {
-            c
-        } else if let Some(Some(pos)) = parsed_cmds
+            Some(c)
+        } else if let Some(Some(_)) = parsed_cmds
             .iter()
             .map(find_label("assets"))
             .find(Option::is_some)
         {
-            pos as i32
+            None
         } else {
             Err(OldTfError::MissingRequiredDirective("assets").with_ctx(1))?
         };
@@ -386,7 +375,7 @@ impl Context {
 impl From<ParsedStatement> for Statement {
     fn from(value: ParsedStatement) -> Self {
         match value {
-            ParsedStatement::Label(name, _) => Statement::Label(Identifier(name)),
+            ParsedStatement::Label(name) => Statement::Label(Identifier(name)),
             ParsedStatement::Command { cmd, arg0, args } => Statement::Command {
                 cmd,
                 arg0: arg0.map(|a0| Value::Integer(a0 as i32)),
