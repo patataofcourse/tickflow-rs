@@ -6,8 +6,12 @@ use thiserror::Error;
 pub enum Error {
     #[error("file IO error: {0}")]
     IoError(std::io::Error),
-    #[error("tickflow error on line {1}: {0}")]
-    OldTfError(OldTfError, usize),
+    #[error("tickflow error on {fname}:{line}: {error}")]
+    OldTfError {
+        fname: String,
+        line: usize,
+        error: OldTfError,
+    },
 }
 
 pub fn nom_ok<I, O, E: nom::error::ParseError<I>>(
@@ -54,8 +58,12 @@ pub enum OldTfError {
 }
 
 impl OldTfError {
-    pub fn with_ctx(self, line_num: usize) -> Error {
-        Error::OldTfError(self, line_num)
+    pub fn with_ctx(self, fname: &str, line_num: usize) -> Error {
+        Error::OldTfError {
+            error: self,
+            fname: fname.to_owned(),
+            line: line_num
+        }
     }
 }
 

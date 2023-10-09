@@ -21,6 +21,7 @@ pub fn re_capture<'a, E>(re: Regex) -> impl Fn(&'a str) -> IResult<&'a str, Vec<
 where
     E: ParseError<&'a str>,
 {
+    //TODO: pls unfuck this code it makes my eyes bleed
     move |i| {
         if let Some(c) = re.captures(i) {
             let v: Vec<_> = c
@@ -29,7 +30,7 @@ where
                 .collect();
             let offset = {
                 let end = v.last().unwrap();
-                end.as_ptr() as usize + end.len() - i.as_ptr() as usize + 1
+                end.as_ptr() as usize + end.len() + 1 - i.as_ptr() as usize
             };
             Ok((i.slice(offset..), v))
         } else {

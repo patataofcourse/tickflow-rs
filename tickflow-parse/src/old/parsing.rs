@@ -22,7 +22,7 @@ use crate::{
 
 use super::{CommandName, Identifier, Operation, Statement, Value, IDENTIFIER_REGEX};
 
-pub fn parse_from_text(f: &mut impl Read) -> Result<Vec<(usize, Statement)>> {
+pub fn parse_from_text(fname: &str, f: &mut impl Read) -> Result<Vec<(usize, Statement)>> {
     let mut text = String::new();
     f.read_to_string(&mut text)?;
 
@@ -35,6 +35,7 @@ pub fn parse_from_text(f: &mut impl Read) -> Result<Vec<(usize, Statement)>> {
             i + 1,
             read_statement(
                 line.split_once("//").map(|c| c.0).unwrap_or(line).trim(),
+                fname,
                 i + 1,
             )?,
         ));
@@ -42,29 +43,29 @@ pub fn parse_from_text(f: &mut impl Read) -> Result<Vec<(usize, Statement)>> {
     Ok(statements)
 }
 
-pub fn read_statement(input: &str, line_num: usize) -> Result<Statement> {
+pub fn read_statement(input: &str, fname: &str, line_num: usize) -> Result<Statement> {
     if let Ok((remaining, (_, name, _))) =
         tuple::<_, _, (), _>((tag::<_, _, ()>("#"), ident, space1))(input)
     {
         match name.as_str() {
             "index" | "start" | "assets" => {
-                if let Ok((_, (val, _))) = tuple::<_, _, (), _>((integer(line_num), eof))(remaining)
+                if let Ok((_, (val, _))) = tuple::<_, _, (), _>((integer(fname, line_num), eof))(remaining)
                 {
                     Ok(Statement::Directive {
                         name,
                         args: vec![Value::Integer(val?)],
                     })
                 } else {
-                    Err(OldTfError::SyntaxError.with_ctx(line_num))
+                    Err(OldTfError::SyntaxError.with_ctx(fname, line_num))
                 }
             }
             "alias" => {
-                match tuple::<_, _, (), _>((ident, space0, integer(line_num), eof))(remaining) {
+                match tuple::<_, _, (), _>((ident, space0, integer(fname, line_num), eof))(remaining) {
                     Ok((_, (aname, _, val, _))) => Ok(Statement::Directive {
                         name,
                         args: vec![Value::Constant(aname), Value::Integer(val?)],
                     }),
-                    Err(_) => Err(OldTfError::SyntaxError.with_ctx(line_num)),
+                    Err(_) => Err(OldTfError::SyntaxError.with_ctx(fname, line_num)),
                 }
             }
             "include" => Ok(Statement::Directive {
@@ -74,12 +75,12 @@ pub fn read_statement(input: &str, line_num: usize) -> Result<Statement> {
                     is_unicode: false,
                 }],
             }),
-            _ => Err(OldTfError::InvalidDirective(name).with_ctx(line_num))?,
+            _ => Err(OldTfError::InvalidDirective(name).with_ctx(fname, line_num))?,
         }
     } else if let Ok((_, (name, _, _))) = tuple::<_, _, (), _>((ident, tag(":"), eof))(input) {
         return Ok(Statement::Label(name));
     } else if let Ok((_, (name, _, _, _, value, _))) =
-        tuple::<_, _, (), _>((ident, space0, tag("="), space0, value(line_num), eof))(input)
+        tuple::<_, _, (), _>((ident, space0, tag("="), space0, value(fname, line_num), eof))(input)
     {
         return Ok(Statement::Constant {
             name,
@@ -87,20 +88,20 @@ pub fn read_statement(input: &str, line_num: usize) -> Result<Statement> {
         });
     } else {
         let (_, (cmd, arg0, args, _)) = tuple::<_, _, nom::error::Error<_>, _>((
-            cmd_name(line_num),
+            cmd_name(fname, line_num),
             opt(pair(
                 space0,
-                with_matching_brackets('<', '>', value(line_num)),
+                with_matching_brackets('<', '>', value(fname, line_num)),
             )),
             opt(pair(
                 space1,
-                separated_list0(tuple((space0, tag(","), space0)), value(line_num)),
+                separated_list0(tuple((space0, tag(","), space0)), value(fname, line_num)),
             )),
             eof,
         ))(input)
         .map_err(|c| {
             println!("{c}");
-            OldTfError::SyntaxError.with_ctx(line_num)
+            OldTfError::SyntaxError.with_ctx(fname, line_num)
         })?;
         let args = args.map(|c| c.1).unwrap_or(vec![]);
         return Ok(Statement::Command {
@@ -139,38 +140,41 @@ pub fn int_ok<'a, E: ParseError<&'a str>>(
     val: &str,
     radix: u32,
     remaining: &'a str,
+    fname: &str,
     line_num: usize,
 ) -> (&'a str, Result<i32>) {
     (
         remaining,
         crate::read_anysign_int(val, radix)
-            .map_err(|c| <_ as Into<OldTfError>>::into(c).with_ctx(line_num)),
+            .map_err(|c| <_ as Into<OldTfError>>::into(c).with_ctx(fname, line_num)),
     )
 }
 
 pub fn integer<'a, E: nom::error::ParseError<&'a str>>(
+    fname: &str,
     line_num: usize,
-) -> impl Fn(&'a str) -> IResult<&str, Result<i32>, E> {
+) -> impl Fn(&'a str) -> IResult<&str, Result<i32>, E> + '_ {
     move |input| {
         let (remaining, val) = digit1::<_, E>(input)?;
         Ok(
             if let Ok((remaining, (_, val))) = tuple((tag("0x"), hex_digit1::<_, E>))(input) {
-                int_ok::<E>(val, 16, remaining, line_num)
+                int_ok::<E>(val, 16, remaining, fname, line_num)
             } else if let Ok((remaining, (_, val))) = tuple((tag("0b"), bin_digit1::<_, E>))(input)
             {
-                int_ok::<E>(val, 2, remaining, line_num)
+                int_ok::<E>(val, 2, remaining,fname, line_num)
             } else {
-                int_ok::<E>(val, 10, remaining, line_num)
+                int_ok::<E>(val, 10, remaining, fname, line_num)
             },
         )
     }
 }
 
 pub fn cmd_name<'a, E: nom::error::ParseError<&'a str>>(
+    fname: &str,
     line_num: usize,
-) -> impl Fn(&'a str) -> IResult<&str, Result<CommandName>, E> {
+) -> impl Fn(&'a str) -> IResult<&str, Result<CommandName>, E> + '_ {
     move |input| {
-        if let Ok((remaining, val)) = integer::<E>(line_num)(input) {
+        if let Ok((remaining, val)) = integer::<E>(fname, line_num)(input) {
             Ok((remaining, val.map(CommandName::Raw)))
         } else {
             let (remaining, val) = ident(input)?;
@@ -180,16 +184,17 @@ pub fn cmd_name<'a, E: nom::error::ParseError<&'a str>>(
 }
 
 pub fn value<'a, E: nom::error::ParseError<&'a str>>(
+    fname: &str,
     line_num: usize,
-) -> impl Fn(&'a str) -> IResult<&str, Result<Value>, E> {
+) -> impl Fn(&'a str) -> IResult<&str, Result<Value>, E> + '_ {
     move |input| {
         if let Ok((remaining, (val1, pairs))) = tuple::<_, _, E, _>((
-            value_no_ops(line_num),
+            value_no_ops(fname, line_num),
             many1(tuple((
                 space0,
                 re_find(OP_REGEX.clone()),
                 space0,
-                value_no_ops(line_num),
+                value_no_ops(fname, line_num),
             ))),
         ))(input)
         {
@@ -234,14 +239,15 @@ pub fn value<'a, E: nom::error::ParseError<&'a str>>(
             assert!(values.len() == 1 && ops.is_empty());
             Ok((remaining, Ok(values.remove(0))))
         } else {
-            value_no_ops(line_num)(input)
+            value_no_ops(fname, line_num)(input)
         }
     }
 }
 
 pub fn value_no_ops<'a, E: nom::error::ParseError<&'a str>>(
+    fname: &str,
     line_num: usize,
-) -> impl Fn(&'a str) -> IResult<&str, Result<Value>, E> {
+) -> impl Fn(&'a str) -> IResult<&str, Result<Value>, E> + '_ {
     move |input| {
         let out: Value;
         let rem: &str;
@@ -249,7 +255,7 @@ pub fn value_no_ops<'a, E: nom::error::ParseError<&'a str>>(
         if let Ok((remaining, (_, val, _, _))) = with_matching_brackets(
             '(',
             ')',
-            tuple::<_, _, E, _>((space0, value(line_num), space0, eof)),
+            tuple::<_, _, E, _>((space0, value(fname, line_num), space0, eof)),
         )(input)
         {
             let val = match val {
@@ -259,7 +265,7 @@ pub fn value_no_ops<'a, E: nom::error::ParseError<&'a str>>(
             rem = remaining;
             out = val;
         } else if let Ok((remaining, (_, _, val))) =
-            tuple::<_, _, E, _>((tag("-"), space0, value(line_num)))(input)
+            tuple::<_, _, E, _>((tag("-"), space0, value(fname, line_num)))(input)
         {
             let val = match val {
                 Ok(c) => c,
@@ -275,7 +281,7 @@ pub fn value_no_ops<'a, E: nom::error::ParseError<&'a str>>(
                 "" => {}
                 c => {
                     return OldTfError::InvalidStrPrefix(c.to_string())
-                        .with_ctx(line_num)
+                        .with_ctx(fname, line_num)
                         .wrap_nom(remaining);
                 }
             }
@@ -284,7 +290,7 @@ pub fn value_no_ops<'a, E: nom::error::ParseError<&'a str>>(
                 is_unicode,
             };
             rem = remaining;
-        } else if let Ok((remaining, val)) = integer::<E>(line_num)(input) {
+        } else if let Ok((remaining, val)) = integer::<E>(fname, line_num)(input) {
             if let Ok(c) = val {
                 rem = remaining;
                 out = Value::Integer(c);
@@ -301,37 +307,6 @@ pub fn value_no_ops<'a, E: nom::error::ParseError<&'a str>>(
             )));
         }
 
-        // check for operations
-        /*
-        if let Ok((remaining, (_, op, _, val2))) =
-            tuple::<_, _, E, _>((space0, re_find(OP_REGEX.clone()), space0, value(line_num)))(rem)
-        {
-            let val2 = match val2 {
-                Ok(c) => c,
-                Err(e) => return e.wrap_nom(remaining),
-            };
-            nom_ok(
-                Value::Operation {
-                    op: match op {
-                        "+" => Operation::Add,
-                        "-" => Operation::Sub,
-                        "*" => Operation::Mul,
-                        "/" => Operation::Div,
-                        "<<" => Operation::Shl,
-                        ">>" => Operation::Shr,
-                        "|" => Operation::Or,
-                        "&" => Operation::And,
-                        "^" => Operation::Xor,
-                        _ => unreachable!(),
-                    },
-                    values: [Box::new(out), Box::new(val2)],
-                },
-                remaining,
-            )
-        } else {
-            nom_ok(out, rem)
-        }
-        */
         nom_ok(out, rem)
     }
 }

@@ -46,10 +46,10 @@ impl Deref for Identifier {
 }
 
 impl Identifier {
-    pub fn new(contents: impl ToString, line_num: usize) -> Result<Self> {
+    pub fn new(contents: impl ToString, fname: &str, line_num: usize) -> Result<Self> {
         let contents = contents.to_string();
         if !IDENTIFIER_REGEX.is_match(&contents) {
-            Err(OldTfError::InvalidIdentifier(contents).with_ctx(line_num))?
+            Err(OldTfError::InvalidIdentifier(contents).with_ctx(fname, line_num))?
         } else {
             Ok(Self(contents))
         }
@@ -172,6 +172,7 @@ impl Context {
     pub fn parse_file<T: Read>(
         statements: Vec<(usize, Statement)>,
         include_fn: impl Fn(String) -> std::io::Result<T>,
+        fname: &str,
     ) -> Result<Self> {
         let mut constants = HashMap::new();
 
@@ -181,10 +182,10 @@ impl Context {
             start,
             assets,
             aliases,
-        } = Self::preprocess_directives(statements, &include_fn, false)?;
+        } = Self::preprocess_directives(statements, &include_fn, false, fname)?;
 
         let Some(index) = index else {
-            Err(OldTfError::MissingRequiredDirective("index").with_ctx(1))?
+            Err(OldTfError::MissingRequiredDirective("index").with_ctx(fname, 1))?
         };
 
         let mut parsed_cmds = vec![];
@@ -193,7 +194,7 @@ impl Context {
         for (l, st) in statements {
             match st {
                 Statement::Constant { name, value } => {
-                    constants.insert(name, Self::parse_value(&constants, value, l)?);
+                    constants.insert(name, Self::parse_value(&constants, value,fname,  l)?);
                 }
                 Statement::Label(c) => parsed_cmds.push(ParsedStatement::Label(c.0)),
                 Statement::Command { cmd, arg0, args } => {
@@ -209,17 +210,17 @@ impl Context {
                     };
                     let arg0 = if let Some(c) = arg0 {
                         //TODO: arg0 must be Integer
-                        match Self::parse_value(&constants, c, l)? {
+                        match Self::parse_value(&constants, c, fname, l)? {
                             ParsedValue::Integer(c) if c == c & ((1 << 18) - 1) => Some(c as u32),
-                            ParsedValue::Integer(c) => Err(OldTfError::OOBArg0(c).with_ctx(l))?,
-                            _ => Err(OldTfError::InvalidArg0Type.with_ctx(l))?,
+                            ParsedValue::Integer(c) => Err(OldTfError::OOBArg0(c).with_ctx(fname, l))?,
+                            _ => Err(OldTfError::InvalidArg0Type.with_ctx(fname, l))?,
                         }
                     } else {
                         None
                     };
                     let args = args
                         .into_iter()
-                        .map(|c| Self::parse_value(&constants, c, l))
+                        .map(|c| Self::parse_value(&constants, c, fname, l))
                         .collect::<Result<_>>()?;
                     parsed_cmds.push(ParsedStatement::Command { cmd, arg0, args })
                 }
@@ -250,7 +251,7 @@ impl Context {
         {
             None
         } else {
-            Err(OldTfError::MissingRequiredDirective("start").with_ctx(1))?
+            Err(OldTfError::MissingRequiredDirective("start").with_ctx(fname, 1))?
         };
 
         let assets = if let Some(c) = assets {
@@ -262,7 +263,7 @@ impl Context {
         {
             None
         } else {
-            Err(OldTfError::MissingRequiredDirective("assets").with_ctx(1))?
+            Err(OldTfError::MissingRequiredDirective("assets").with_ctx(fname, 1))?
         };
 
         Ok(Self {
@@ -275,23 +276,24 @@ impl Context {
     fn parse_value(
         constants: &HashMap<Identifier, ParsedValue>,
         value: Value,
+        fname: &str,
         line_num: usize,
     ) -> Result<ParsedValue> {
         // difference from what Tickompiler does - labels, instead of being treated as integers with
         // special metadata, are their own type, so operations don't apply to them
         match value {
             Value::Operation { op, values } => {
-                let [val1, val2] = values.map(|c| Self::parse_value(constants, *c, line_num));
+                let [val1, val2] = values.map(|c| Self::parse_value(constants, *c, fname, line_num));
 
                 if let (ParsedValue::Integer(val1), ParsedValue::Integer(val2)) = (val1?, val2?) {
                     Ok(ParsedValue::Integer(op.apply(val1, val2)))
                 } else {
-                    Err(OldTfError::InvalidOpType.with_ctx(line_num))?
+                    Err(OldTfError::InvalidOpType.with_ctx(fname, line_num))?
                 }
             }
-            Value::Negated(c) => match Self::parse_value(constants, *c, line_num)? {
+            Value::Negated(c) => match Self::parse_value(constants, *c, fname, line_num)? {
                 ParsedValue::Integer(c) => Ok(ParsedValue::Integer(-c)),
-                _ => Err(OldTfError::InvalidOpType.with_ctx(line_num))?,
+                _ => Err(OldTfError::InvalidOpType.with_ctx(fname, line_num))?,
             },
             //TODO: ensure all labels used exist
             Value::Constant(c) => Ok(constants
@@ -317,6 +319,7 @@ impl Context {
         statements: Vec<(usize, Statement)>,
         include_fn: &impl Fn(String) -> std::io::Result<T>,
         is_included_file: bool,
+        fname: &str,
     ) -> Result<DirectiveResult> {
         let (mut index, mut start, mut assets) = (None, None, None);
         let mut aliases = HashMap::new();
@@ -335,24 +338,25 @@ impl Context {
                         aliases.insert(args[0].unwrap_constant().clone(), *args[1].unwrap_int());
                     }
                     "include" if !is_included_file => {
-                        let mut included_file = include_fn(args[0].unwrap_string().0.clone())?;
-                        let included_file = parse_from_text(&mut included_file)?;
+                        let fname = args[0].unwrap_string().0;
+                        let mut included_file = include_fn(fname.clone())?;
+                        let included_file = parse_from_text(fname, &mut included_file)?;
                         let DirectiveResult {
                             statements: included_file,
                             index,
                             start,
                             assets,
                             aliases: included_aliases,
-                        } = Self::preprocess_directives(included_file, include_fn, true)?;
+                        } = Self::preprocess_directives(included_file, include_fn, true, fname)?;
 
                         let (None, None, None) = (index, start, assets) else {
-                            Err(OldTfError::IncludedDirective.with_ctx(1))?
+                            Err(OldTfError::IncludedDirective.with_ctx(fname, 1))?
                         };
                         out_statements.extend(included_file);
                         aliases.extend(included_aliases);
                     }
                     "include" if is_included_file => {
-                        Err(OldTfError::IncludedDirective.with_ctx(1))?
+                        Err(OldTfError::IncludedDirective.with_ctx(fname, 1))?
                     }
                     _ => unreachable!(),
                 }
