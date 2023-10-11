@@ -28,7 +28,7 @@ pub fn parse_from_text(fname: &str, f: &mut impl Read) -> Result<Vec<(usize, Sta
 
     let mut statements = vec![];
     for (i, line) in text.lines().enumerate() {
-        if line.trim_start().starts_with("//") || line.is_empty() {
+        if line.trim_start().starts_with("//") || line.trim_start().is_empty() {
             continue;
         }
         statements.push((
@@ -49,7 +49,8 @@ pub fn read_statement(input: &str, fname: &str, line_num: usize) -> Result<State
     {
         match name.as_str() {
             "index" | "start" | "assets" => {
-                if let Ok((_, (val, _))) = tuple::<_, _, (), _>((integer(fname, line_num), eof))(remaining)
+                if let Ok((_, (val, _))) =
+                    tuple::<_, _, (), _>((integer(fname, line_num), eof))(remaining)
                 {
                     Ok(Statement::Directive {
                         name,
@@ -60,7 +61,9 @@ pub fn read_statement(input: &str, fname: &str, line_num: usize) -> Result<State
                 }
             }
             "alias" => {
-                match tuple::<_, _, (), _>((ident, space0, integer(fname, line_num), eof))(remaining) {
+                match tuple::<_, _, (), _>((ident, space0, integer(fname, line_num), eof))(
+                    remaining,
+                ) {
                     Ok((_, (aname, _, val, _))) => Ok(Statement::Directive {
                         name,
                         args: vec![Value::Constant(aname), Value::Integer(val?)],
@@ -161,7 +164,7 @@ pub fn integer<'a, E: nom::error::ParseError<&'a str>>(
                 int_ok::<E>(val, 16, remaining, fname, line_num)
             } else if let Ok((remaining, (_, val))) = tuple((tag("0b"), bin_digit1::<_, E>))(input)
             {
-                int_ok::<E>(val, 2, remaining,fname, line_num)
+                int_ok::<E>(val, 2, remaining, fname, line_num)
             } else {
                 int_ok::<E>(val, 10, remaining, fname, line_num)
             },
