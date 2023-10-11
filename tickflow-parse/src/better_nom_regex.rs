@@ -28,10 +28,7 @@ where
                 .iter()
                 .map(|m| m.map(|m| i.slice(m.start()..m.end())).unwrap_or(""))
                 .collect();
-            let offset = {
-                let end = v.last().unwrap();
-                end.as_ptr() as usize + end.len() + 1 - i.as_ptr() as usize
-            };
+            let offset = c.iter().next().unwrap().map(|m| m.end()).unwrap_or(0);
             Ok((i.slice(offset..), v))
         } else {
             Err(Err::Error(E::from_error_kind(i, ErrorKind::RegexpCapture)))
