@@ -3,7 +3,9 @@
 
 by patataofcourse
 
-Note: a "language implementation" refers to a program that reads Tickscript code and converts it to a specific bytecode, with its own set of commands and limitations.
+> Note: a "language implementation" refers to a program that reads Tickscript code and converts it to a specific bytecode, with its own set of commands and limitations.
+
+<!--> > While this is the finished version of Tickscript specification v0.1.0, it is not meant for use yet. Many breaking changes will likely follow over the next few months.<-->
 
 ## Values 
 
@@ -73,7 +75,7 @@ Arrays are represented by a type `x[]`, where `x` is the type of the contents of
 
 ### Sub pointers
 
-Sub pointers can't be created manually. Instead, they are the type of references to a specific sub by name. See [subs section]() for more information.
+Sub pointers can't be created manually. Instead, they are the type of references to a specific sub by name. See [subs section](#subs) for more information.
 
 #### Typing
 
@@ -115,44 +117,69 @@ Keywords are reserved identifiers that cannot be used as a sub or constant name,
 - Every type name: `any` plus all the types defined in the [values section](#values)
 - Command names are also treated as keywords for the sake of clarity, however, those names vary between language implementations
 
-# everything from here down is (mostly) unedited
-
 ## Operations
 
-you can apply operations to integers:
-- addition: a + b
-- substraction: a - b
-- multiplication: a * b
-- integer division: a / b
-- shift left: a << b
-- shift right: a >> b
-- bitwise AND: a & b
-- bitwise OR: a | b
-- bitwise XOR: a ^ b
-- negation: -a
-- bitwise NOT: ~a
+Tickscript supports compile-time operations to be done to constant values. The available operations are the following:
 
-you can also apply (compile-time) concatenation to strings using the + operator, like addition for integers
+### For integers
+
+The following binary (two-operand) operations are available:
+
+- Addition: `a + b`
+- Substraction: `a - b`
+- Multiplication: `a * b`
+- Integer division: `a / b`
+- Shift left: `a << b`
+- Shift right: `a >> b`
+- Bitwise AND: `a & b`
+- Bitwise OR: `a | b`
+- Bitwise XOR: `a ^ b`
+
+In addition, there's also two unary (single-operand) operations:
+
+- Negation: `-a`
+- Bitwise NOT: `~a`
+
+### For strings
+
+Strings only have one operation available to them: concatenation. It uses the addition symbol: `a + b`.
 
 ## Statements
 
-statements usually take up a line, but can be terminated by a semicolon. you can add another statement after that semicolon, however, this is only recommended for commands.
-lines can be empty
+Statements are the main component of Tickscript. A statement is a basic building block of a Tickscript file that defines the different values and commands in a chart.
 
-The first non-comment non-empty line in a Tickscript file must be a #tickscript directive (see directives section)
+Most statements are terminated by a line break. It is possible to add several statements in one line by using a semicolon as a terminator instead. However, this is only recommended for particularly short constant definitions or command statements.
 
-there's the following kinds of statements:
-- directives
-    - of the form #$name $args
-    - $name is specified by the directive definition
-    - $args is feeded to the directive. args taken depends on the directive
-    - the following directives exist:
-        - #tickscript
-            - required to be read as a Tickscript file
-            - must be the first non-comment non-empty line in the file
-        - #include $filename
-            - filename: string, name of the file to include
-        - #index $index
+A line doesn't necessarily have to contain a statement, it can be empty or consist of only comments.
+
+The first statement in a Tickscript file (that is, the first non-empty line excluding comments) must be a `#tickscript` directive (see [directives section](#available-directives)).
+
+There's four main kinds of statements: directives, subs, command definitions, and constant definitions.
+
+### Directives
+
+Directives are easily identifiable due to starting with a `#` symbol. They are similar to C preprocessor directives, however, they define values that are intrinsic to the Tickscript file, such as metadata.
+
+Directives use the following syntax: `#name arg0, arg1, ..., argn`. The name is a unique identifier for the directive one wants to use. The number of arguments and their accepted types is determined by the directive in question.
+
+Directives are the only kind of statement that requires a line of its own. It can't be terminated with a semicolon or be placed after another statement with a semicolon.
+
+#### Available directives
+
+- `#tickscript`: this directive is required for the file to be valid Tickscript. It must be the first statement in any Tickscript file, and is invalid in any other location.
+- `#include <filename>`: makes the contents of the file specified by `filename` available to this file. Requires the included file to have an `#includeme` or `#module` directive. Filename must be a string.
+- `#includeme`: specifies this file can be included and cannot be compiled on its own.
+- `#module <namespace>`: similar to `#includeme`, however, instead of being directly accessible, the elements of the file will be available in this file under a namespace `namespace`. Namespace must be an identifier.
+- `#requires <version>`: defines which version of the Tickscript spec this file follows. Version must be a string of the format `"x.y"` or `"x.y.z"`, where x-y-z are integers. Compatibility between a file and a spec version is as follows for any version x.y.z:
+  - `x` must always match between the two versions
+  - if `x == 0`, `y` must always match between the two versions and the spec's `z` must be greater or equal than the file's.
+  - if `x != 0`, the spec's `y` must be greater or equal than the file's, and, if both `y` values match, the spec's `z` must be greater or equal than the file's.
+# unedited under here
+        - #tempo $id $samplerate
+            - id: id for the tempo file this tempo will target
+            - samplerate: optional, sample rate that the tempo file will work with
+        - #endtempo
+        - #index $index 
             - index: default index to set this mod to target, for a generated mod manifest file. file must not be an includable
         - #name $name
             - name: name of the mod, for a generated mod manifest
@@ -162,24 +189,9 @@ there's the following kinds of statements:
             - description: description of the mod, for a generated mod manifest
         - #version $version
             - version: semver version of the mod, for a generated mod manifest
-        - #includeme
-            - specifies this file can be included and cannot be compiled standalone
-        - #module $namespace
-            - specifies this file can be included and cannot be compiled standalone
-            - all its subs and constants will be included within a namespace called $namespace
-        - #requires $version
-            - version: semver version of the tickscript spec. needs to match to compile this file
-            - if the version is x.y.z, where x != 0, the spec version needed by the compiler is:
-                - x needs to match exactly
-                - y needs to be greater or equal
-                - z needs to be greater or equal if y is equal
-            - if the version is 0.y.z, the spec version needed by the compiler is:
-                - y needs to match exactly
-                - z needs to be greater or equal
-        - #tempo $id $samplerate
-            - id: id for the tempo file this tempo will target
-            - samplerate: optional, sample rate that the tempo file will work with
-        - #endtempo
+
+### Subs
+
 - subs: short for "subroutines", they contain all the actual tickflow bytecode
     - subs are declared with the keyword "sub", the name of the sub, and a pair of curly brackets {}, like so:
         sub $sub_name {
@@ -239,6 +251,9 @@ there's the following kinds of statements:
                 }
                 * same operations as if statements
                 * this will repeat the code inside the loop until the conditional variable succeeds in the comparison
+
+### Constant definitions
+
 - constant definitions: sets a variable to a certain value, to be used by the file anywhere else
     - form is "const $name = $value"
     - value can be any value Tickscript can handle, name has to be a valid variable name
@@ -251,6 +266,9 @@ there's the following kinds of statements:
         sub some_other_sub { ... }
         const d = [some_sub, some_other sub]
         const e = [a, b, c]
+
+### Command definitions
+
 - command definitions: creates an alias to any other command, whether an existing definition or a simple raw_op
     - form is "const $new_signature = $old_signature"
     - the new signature can define arguments by type, following this syntax: cmd_name variable:type, variable:type, ...
@@ -284,13 +302,11 @@ each language implementation would include the following, defined in code:
     - how the runtime will be written and distributed will be described in future versions of the specification, currently Tickscript DOES NOT OFFICIALLY SUPPORT RUNTIMES
 
 ## What's left?
-- specify a method for runtime and standard library sub creation and distribution
-- should #includeme and #module be one directive? if so, what could be the name?
-    - #module is one possible name, however, that could be confusing, since modules usually involve wrapping in a namespace in programming contexts
-- is "syntactic statements" a good name?
-- should #requires be required? probably yes, right?
-- describe the #tempo - #endtempo format (will be mostly the same as Tickompiler)
-- is the language as defined in this spec too jarring of a change? does it still include some inaccessibility issues for people unexperienced with code?
-- make the spec cleaner, clearer, and more consistent with more formal language specifications
-- convert the spec into some markup format (probably markdown)
-- actually implement the spec!
+- Specify a method for runtime and standard library sub creation and distribution
+- Should `#includeme` and `#module` be one directive? if so, what could be the name?
+    - `#module` is one possible name, however, that could be confusing, since "module" usually involves being wrapped in a namespace in most programming contexts
+- Is "syntactic statements" a good name?
+- Should `#requires` be required? (Leaning towards "yes")
+- Describe the `#tempo` - `#endtempo` format (will be mostly the same as Tickompiler)
+- Is the language as defined in this spec too jarring of a change? Does it still include some inaccessibility issues for people unexperienced with code?
+- Actually implement the spec!
