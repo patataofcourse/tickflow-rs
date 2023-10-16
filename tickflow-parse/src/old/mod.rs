@@ -194,7 +194,7 @@ impl Context {
         for (l, st) in statements {
             match st {
                 Statement::Constant { name, value } => {
-                    constants.insert(name, Self::parse_value(&constants, value,fname,  l)?);
+                    constants.insert(name, Self::parse_value(&constants, value, fname, l)?);
                 }
                 Statement::Label(c) => parsed_cmds.push(ParsedStatement::Label(c.0)),
                 Statement::Command { cmd, arg0, args } => {
@@ -212,7 +212,9 @@ impl Context {
                         //TODO: arg0 must be Integer
                         match Self::parse_value(&constants, c, fname, l)? {
                             ParsedValue::Integer(c) if c == c & ((1 << 18) - 1) => Some(c as u32),
-                            ParsedValue::Integer(c) => Err(OldTfError::OOBArg0(c).with_ctx(fname, l))?,
+                            ParsedValue::Integer(c) => {
+                                Err(OldTfError::OOBArg0(c).with_ctx(fname, l))?
+                            }
                             _ => Err(OldTfError::InvalidArg0Type.with_ctx(fname, l))?,
                         }
                     } else {
@@ -263,7 +265,8 @@ impl Context {
         {
             None
         } else {
-            Err(OldTfError::MissingRequiredDirective("assets").with_ctx(fname, 1))?
+            Some(0)
+            //Err(OldTfError::MissingRequiredDirective("assets").with_ctx(fname, 1))?
         };
 
         Ok(Self {
@@ -283,7 +286,8 @@ impl Context {
         // special metadata, are their own type, so operations don't apply to them
         match value {
             Value::Operation { op, values } => {
-                let [val1, val2] = values.map(|c| Self::parse_value(constants, *c, fname, line_num));
+                let [val1, val2] =
+                    values.map(|c| Self::parse_value(constants, *c, fname, line_num));
 
                 if let (ParsedValue::Integer(val1), ParsedValue::Integer(val2)) = (val1?, val2?) {
                     Ok(ParsedValue::Integer(op.apply(val1, val2)))
