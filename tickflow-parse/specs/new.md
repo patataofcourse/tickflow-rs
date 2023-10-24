@@ -174,83 +174,132 @@ Directives are the only kind of statement that requires a line of its own. It ca
   - `x` must always match between the two versions
   - if `x == 0`, `y` must always match between the two versions and the spec's `z` must be greater or equal than the file's.
   - if `x != 0`, the spec's `y` must be greater or equal than the file's, and, if both `y` values match, the spec's `z` must be greater or equal than the file's.
-# unedited under here
-        - #tempo $id $samplerate
-            - id: id for the tempo file this tempo will target
-            - samplerate: optional, sample rate that the tempo file will work with
-        - #endtempo
-        - #index $index 
-            - index: default index to set this mod to target, for a generated mod manifest file. file must not be an includable
-        - #name $name
-            - name: name of the mod, for a generated mod manifest
-        - #authors $authors
-            - authors: array of names of mod authors, for a generated mod manifest
-        - #description $description
-            - description: description of the mod, for a generated mod manifest
-        - #version $version
-            - version: semver version of the mod, for a generated mod manifest
+- `#tempo <id> <samplerate>` + `#endtempo`: mark the start and end of a tempo section. `samplerate` is optional, and defaults to 32000. Tempo format is a set of lines formatted like so:
+    - TODO
+- `#index <index>`: sets the default index in a generated mod manifest. Only for non-includable Tickscript files.
+- `#name <name>`: name of the mod or file. Will be included in generated mod manifests.
+- `#authors <authors>`: authors of the mod or file (`string[]`). Will be included in generated mod manifests.
+- `#description <description>`: description of the mod or file. Will be included in generated mod manifests.
+- `#version <version>`: version of the mod or file. Will be included in a generated mod manifest. Semantic versioning preferred but not required.
 
 ### Subs
+Short for "subroutines", subs define the Tickflow bytecode to be compiled. Similar to functions in most programming languages, they define a set of instructions to be ran in order.
 
-- subs: short for "subroutines", they contain all the actual tickflow bytecode
-    - subs are declared with the keyword "sub", the name of the sub, and a pair of curly brackets {}, like so:
-        sub $sub_name {
-            $sub_contents
-        }
-    - before the keyword "sub", the keyword "sync" can be added to indicate that this sub is to be called synchronously, that is, without spawning a new thread
-    - the contents of the sub is a list of "command statements" and "syntactic statements", which work the same as any other statement, except they are specific to sub contents:
-        - commands are the direct representation of tickflow, abstracted for easier understanding
-            - they follow the syntax $name $($args),?
-            - unlike Tickflow, arg0s are not to be handled manually in Tickscript. they are an argument just like any other, or are used to distinguish between two different commands
-            - "Tickflow-like" commands can be used with the "raw_op $val $(<$arg0>)? $($args),*" syntax, but val must be a numeric value, not a command definition
-            - for commands undefined in the current implementation for a specific language, see command definition statements
-            - the language implementation can abstract these commands as much as it needs to make the language simple and easy to use. optionally, raw variants of these commands may be supplied
-        - syntactic statements are the abstraction of some concepts commonly used in tickflow. if they do not exist or cannot be represented in a specific language, the implementation for it can manually disable them. examples are:
-            * NOTE: since tickflow usually works with a conditional variable, condition-based statements work by applying a specific comparison to that specific variable and a given constant value (condition)
-                - if this ever changes (for example, in a "Rhythm Heaven 5" where it STILL USES TICKFLOW), the spec may be updated
-                - strings and arrays CANNOT be compared to each other unless the language SPECIFICALLY features string/array comparison
-            - if / else if / else statements
-                if $op $condition {
-                    ...
-                } else if $op $condition {
-                    ...
-                } else {
-                    ...
-                }
-                * operations: == (equal), != (not equal), > (greater than), < (less than), >= (greater or equal than), <= (lesser or equal than)
-                * specifying no operation
-            - switch / case statements
-                switch {
-                    case $condition:
-                        ...
-                        break
-                    case $condition:
-                        ...
-                    case $condition:
-                    case $condition:
-                        ...
-                        break
-                    default:
-                        ...
-                }
-                * the final case in the switch/case does not need to include a break statement
-            - inconditional loops
-                do $number_of_times {
-                    ...
-                }
-                * this will expand the code inside the loop the specific amount of times required if the language does not include an inconditional loop function
-                * do n {} MUST NOT alter the conditional variable, or at least must do so in a way that does not affect Tickflow execution
+Subs are declared with the keyword `sub`, for example: 
+```c
+sub my_sub {
+    // sub contents here
+}
+```
 
-                loop {
-                    ...
-                }
-                * this will make the loop go on forever until it is killed (kill_loc, kill_cat, engine switching, etc.)
-            - conditional loops
-                while $op $condition {
-                    ...
-                }
-                * same operations as if statements
-                * this will repeat the code inside the loop until the conditional variable succeeds in the comparison
+Subs are asynchronous by default, that is, they spawn a new thread. You can define them as synchronous by adding the keyword `sync` before `sub`, like this:
+```c
+sync sub my_sync_sub {
+    // sub contents here
+}
+```
+
+A sub's contents is a list of statements, however, only two unique kinds of statements are allowed within subs: command statements and syntactic statements. These **cannot** be used outside a sub's contents!
+
+#### Command statements
+Commands are the direct representation of Tickflow, abstracted for easier understanding. They follow this syntax:
+
+```c
+command_name arg1, arg2, ...
+```
+
+If you have any prior experience with Tickflow, it might surprise you to not see the arg0 (also known as special argument) included in this syntax. This is because, aside from [raw-op commands](#raw_op-commands), arg0s are not manually managed: they should be handled as a regular argument or as different commands, depending on the function of the arg0.
+
+The language implementation has the choice and ability to make its commands as abstracted and simplified as it wants, for the sake of easiness, simplicity, and ergonomics. Optionally, it can supply raw variants of the commands it abstracts.
+
+If a specific command isn't defined in the language implementation, you can use a [command definition statement](#command-definitions) to define it.
+
+##### `raw_op` commands
+
+Raw Tickflow commands (with the Tickompiler syntax `cmd<arg0> arg1, arg2...`) can also be used with the `raw_op` keyword, like so: `raw_op cmd<arg0> arg1, arg2...`
+
+You can use this to run commands that aren't defined in the language implementation.
+
+However, you can't use *named* commands in `raw_op` command statements. `cmd` **must** be an integer.
+
+#### Syntactic statements
+Syntactic statements are the abstraction of some concepts commonly used in Tickflow, such as if/else statements or loops.
+
+If they do not exist or cannot be represented in a specific language, the implementation for it can manually disable them.
+
+##### Available syntactic statements
+> Note: since tickflow usually works with a conditional variable, condition-based statements work by applying a specific comparison to that specific variable and a given constant value (condition)
+> 
+> If this ever changes (for example, in a "Rhythm Heaven 5", as long as it still uses Tickflow), the spec may be updated
+
+> Note: strings and arrays **cannot** be compared to each other unless the language **specifically** features string/array comparison
+
+
+- `if` / `else if` / `else` statements:
+
+```c
+if <op> <condition> {
+    ...
+} else if <op> <condition> {
+    ...
+} else {
+    ...
+}
+```
+
+Available operations are: `==` (equal), `!=` (not equal), `>` (greater than), `<` (less than), `>=` (greater or equal to), `<=` (lesser or equal to). Specifying no operation defaults to `==`.
+
+- `switch` / `case` statements
+
+```c
+switch {
+    case $condition:
+        ...
+        break
+    case $condition:
+        ...
+    case $condition:
+    case $condition:
+        ...
+        break
+    default:
+        ...
+}
+```
+              
+The final `case`/`default` in the statement does not need to include a `break` statement.
+
+- Inconditional loops (`do N` loops):
+
+```c
+do <N> {
+    ...
+}
+```
+
+This will expand the code inside the loop the specific amount of times required (if the language does not already include an inconditional loop function).
+
+`do N` **must not** alter any runtime variables, or if it does, it must do so in a way that the Tickscript user must not be able to interact with. 
+
+- Conditional and infinite loops (`while` and `loop`)
+
+```c
+while $op $condition {
+    ...
+}
+```
+
+This will repeat the code inside the loop until the conditional variable succeeds in the comparison. Operations are the same ones available in `if` statements.
+
+```c
+loop {
+    ...
+}
+```
+
+This will make the loop go on forever until it is killed (kill_loc, kill_cat, engine switching, etc.)
+
+# everything from here downwards is still unedited
 
 ### Constant definitions
 
@@ -278,8 +327,12 @@ Directives are the only kind of statement that requires a line of its own. It ca
     - the old signature can use any existing command (including raw_op), plus the variables/arguments defined in the new signature
         - example: command call.default _sub: sub = raw_op 0<4>, _sub, 0, 0
 
+### Comments
+
 line comments start with a //
 multiline comments are started with /* and finished with */, like C comments
+
+## Per-implementation details
 
 each language implementation would include the following, defined in code:
 - definitions for commands
