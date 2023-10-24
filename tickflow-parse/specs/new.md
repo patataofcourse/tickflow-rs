@@ -253,13 +253,13 @@ Available operations are: `==` (equal), `!=` (not equal), `>` (greater than), `<
 
 ```c
 switch {
-    case $condition:
+    case <condition>:
         ...
         break
-    case $condition:
+    case <condition>:
         ...
-    case $condition:
-    case $condition:
+    case <condition>:
+    case <condition>:
         ...
         break
     default:
@@ -291,7 +291,7 @@ while $op $condition {
 
 This will repeat the code inside the loop until the conditional variable succeeds in the comparison. Operations are the same ones available in `if` statements.
 
-```c
+```rs
 loop {
     ...
 }
