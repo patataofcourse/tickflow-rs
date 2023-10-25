@@ -1,9 +1,9 @@
 [package]
 name = "tickflow-parse"
-version = "0.0.0"
+description = "Parser for the the Tickflow and Tickscript languages"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version.workspace = true
 
 [dependencies]
 nom = "7.1"

@@ -209,7 +209,6 @@ impl Context {
                         }
                     };
                     let arg0 = if let Some(c) = arg0 {
-                        //TODO: arg0 must be Integer
                         match Self::parse_value(&constants, c, fname, l)? {
                             ParsedValue::Integer(c) if c == c & ((1 << 18) - 1) => Some(c as u32),
                             ParsedValue::Integer(c) => {

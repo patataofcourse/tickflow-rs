@@ -12,7 +12,11 @@ pub fn main() {
         old::parsing::read_statement("name = 60", "test", 4),
         old::parsing::read_statement("name = 0x1f", "test", 5),
         old::parsing::read_statement("name = 0b01", "test", 6),
-        old::parsing::read_statement("name = 2 + 3 * some_constant >> 4 & 1 | 2 ^ 3 << 1", "test", 7),
+        old::parsing::read_statement(
+            "name = 2 + 3 * some_constant >> 4 & 1 | 2 ^ 3 << 1",
+            "test",
+            7,
+        ),
         old::parsing::read_statement("name = 2 - 2", "test", 8),
         old::parsing::read_statement("name = 2 / some_constant", "test", 9),
         old::parsing::read_statement("name = value", "test", 10),
@@ -35,7 +39,10 @@ pub fn main() {
         }
     }
     println!("------");
-    let b = old::parse_from_text("test.tickflow", &mut TEST_TICKFLOW.bytes().collect::<Vec<u8>>().as_slice());
+    let b = old::parse_from_text(
+        "test.tickflow",
+        &mut TEST_TICKFLOW.bytes().collect::<Vec<u8>>().as_slice(),
+    );
     match b {
         Ok(c) => {
             for d in &c {

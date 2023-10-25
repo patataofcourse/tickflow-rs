@@ -30,7 +30,6 @@ impl Error {
     }
 }
 
-//TODO: specify filename for includes
 #[derive(Debug, Error)]
 pub enum OldTfError {
     #[error("invalid identifier name \"{0}\"")]
@@ -62,7 +61,7 @@ impl OldTfError {
         Error::OldTfError {
             error: self,
             fname: fname.to_owned(),
-            line: line_num
+            line: line_num,
         }
     }
 }
