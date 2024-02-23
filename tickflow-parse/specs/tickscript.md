@@ -5,7 +5,7 @@ by patataofcourse
 
 > Note: a "language implementation" refers to a program that reads Tickscript code and converts it to a specific bytecode, with its own set of commands and limitations.
 
-<!--> > While this is the finished version of Tickscript specification v0.1.0, it is not meant for use yet. Many breaking changes will likely follow over the next few months.<-->
+> While this is the finished version of Tickscript specification v0.1.0, it is not meant for use yet. Many breaking changes will likely follow over the next few months.
 
 ## Values 
 
@@ -35,7 +35,7 @@ Other integer types are available:
 
 ### Strings
 
-Strings can be values in Tickscript, with an optional prefix `u` for UTF-16 strings: `"hello ascii"`, `u"hello utf-16"`
+Strings can be values in Tickscript, with an optional prefix `u` for UTF-16 strings: `"hello ascii"`, `u"hello utf-16"`.
 
 Other optional prefixes for strings can be added in the future (such as `b""`, `r""`, etc).
 
@@ -49,12 +49,14 @@ Strings are covered under the `string` type.
 
 ### Arrays
 
-Tickscript supports arrays, which can contain any number of elements of one type. They are immutable (like all other types in Tickscript), and can contain strings or other arrays, as long as those strings or arrays are all of the same type
+Tickscript supports arrays, which can contain any number of elements of one type. They are immutable (like all other types in Tickscript), and can contain strings or other arrays, as long as those strings or arrays are all of the same type.
 > This means, for example: you can't store a UTF-16 string and a ASCII string in the same array, or a u16 array and a u32 array in the same array.
 
 For integer arrays, you can specify the type of the integer (see [above](#typing)). Otherwise, it'll be assumed to be `u32`.
 
-Examples: `[0, 1, 2]`, `u16[5, 9, 65535]`, `["hello", "world"]`, `i8[-127, 0, 127]`
+Examples: `[0, 1, 2]`, `u16[5, 9, 65535]`, `["hello", "world"]`, `i8[-127, 0, 127]`.
+
+Trailing commas (e.g. `[0, 1, 2,]`) are allowed in arrays.
 
 Here's an example of nested arrays:
 ```c
@@ -65,7 +67,12 @@ Here's an example of nested arrays:
         "hello", // EN
         ...
     ],
-    ...
+    // OK
+    [
+        null, 
+        "goodbye",
+        ...
+    ],
 ]
 ```
 
@@ -175,7 +182,7 @@ Directives are the only kind of statement that requires a line of its own. It ca
   - if `x == 0`, `y` must always match between the two versions and the spec's `z` must be greater or equal than the file's.
   - if `x != 0`, the spec's `y` must be greater or equal than the file's, and, if both `y` values match, the spec's `z` must be greater or equal than the file's.
 - `#tempo <id> <samplerate>` + `#endtempo`: mark the start and end of a tempo section. `samplerate` is optional, and defaults to 32000. Tempo format is a set of lines formatted like so:
-    - TODO
+    - TODO: define tempo format
 - `#index <index>`: sets the default index in a generated mod manifest. Only for non-includable Tickscript files.
 - `#name <name>`: name of the mod or file. Will be included in generated mod manifests.
 - `#authors <authors>`: authors of the mod or file (`string[]`). Will be included in generated mod manifests.
@@ -230,9 +237,9 @@ If they do not exist or cannot be represented in a specific language, the implem
 ##### Available syntactic statements
 > Note: since tickflow usually works with a conditional variable, condition-based statements work by applying a specific comparison to that specific variable and a given constant value (condition)
 > 
-> If this ever changes (for example, in a "Rhythm Heaven 5", as long as it still uses Tickflow), the spec may be updated
+> If this ever changes (for example, in a "Rhythm Heaven 5", as long as it still uses Tickflow), the spec may be updated.
 
-> Note: strings and arrays **cannot** be compared to each other unless the language **specifically** features string/array comparison
+> Note: strings and arrays **cannot** be compared to each other unless the language **specifically** features string/array comparison.
 
 
 - `if` / `else if` / `else` statements:
@@ -284,7 +291,7 @@ This will expand the code inside the loop the specific amount of times required 
 - Conditional and infinite loops (`while` and `loop`)
 
 ```c
-while $op $condition {
+while <op> <condition> {
     ...
 }
 ```
@@ -299,60 +306,123 @@ loop {
 
 This will make the loop go on forever until it is killed (kill_loc, kill_cat, engine switching, etc.)
 
-# everything from here downwards is still unedited
 
 ### Constant definitions
 
-- constant definitions: sets a variable to a certain value, to be used by the file anywhere else
-    - form is "const $name = $value"
-    - value can be any value Tickscript can handle, name has to be a valid variable name
-    - you can set constants to sub pointers, other constants or to modifications of other constants, for example:
-        const a = 2
-        const b = a
-        const c = b << 3
-        // note that this "inline" format for subs is only used as an example, and is NOT valid Tickscript
-        sub some_sub { ... }
-        sub some_other_sub { ... }
-        const d = [some_sub, some_other sub]
-        const e = [a, b, c]
+A constant definition gives a name to a specific value, so that it can be used anywhere else in the Tickscript file. Constant definitions follow this syntax:
+
+```c
+const <name> = <value>;
+```
+
+The name must be any valid identifier (namespaced or not) that is not currently in use, and the value can be any valid Tickscript value. This means it's possible to set a constant to another constant or a modification of another constant, for example:
+
+```c
+const one_beat = 0x30;
+const two_beats = one_beat * 2;
+```
+
+A constant can also be of the type of a sub pointer or an array of sub pointers, in which case each of the values acts like a regular sub pointer.
+
+
+```c
+sub a {
+
+}
+sub b {
+
+}
+const one_sub = a;
+const both_subs = [a, b]
+
+sub c {
+    call one_sub;
+}
+```
 
 ### Command definitions
 
-- command definitions: creates an alias to any other command, whether an existing definition or a simple raw_op
-    - form is "const $new_signature = $old_signature"
-    - the new signature can define arguments by type, following this syntax: cmd_name variable:type, variable:type, ...
-        - supported types: any, sub, sub_sync, int, uint, u8, u16, u32, i8, i16, i32, $type [] (arrays, like u8[], u16[], etc), string
-            - int/uint is only supported for arguments directly and defaults to either 32-bit or 18-bit depending on context (iX/uX is not supported for arguments)
-            - arrays need a specific integer or sub type (int/uint is not supported in arrays)
-    - the old signature can use any existing command (including raw_op), plus the variables/arguments defined in the new signature
-        - example: command call.default _sub: sub = raw_op 0<4>, _sub, 0, 0
+A command definition creates an alias to any existing Tickscript command (including raw Tickflow operations). This is their syntax:
+```c
+command <new_signature> = <old_signature>
+```
+
+The old signature just looks like a regular command or raw_op statement, while the new signature looks like this:
+```c
+<name> <arg1_name>: <arg1_type>, <arg2_name>: <arg2_type>, ...
+```
+
+This applies for any number of arguments between 0 and 15.
+
+The command name has to be a valid identifier (namespaced or not) that is not currently in use. The argument names also need to be valid identifiers not in use, however, they'll only be valid for the context of the old signature definition. The argument types can be `any` or any of the types defined in the [values](#values) section.
+
+You can use any of the arguments defined in the new signature as values in the context of the old signature.
+
+Example:
+```c
+command rest.beats beats: int = rest beats * 0x30
+command call.default _sub: sub = raw_op 0<4>, _sub, 0, 0
+```
 
 ### Comments
 
-line comments start with a //
-multiline comments are started with /* and finished with */, like C comments
+A comment is a sector of the Tickscript file that does not get read by the compiler. This works to leave clarifying notes or documentation.
+
+Line comments follow this syntax:
+```c
+some_command 0, 1, 2
+// this comment covers the entire line
+another_command 3, 4, 5 // this comment covers the right-hand side of the double-slash
+```
+
+Multiline comments follow this syntax:
+```c
+some_command 0, 1, 2
+/* the comment starts whenever these symbols are found
+
+a multiline comment can span
+as much space as needed
+as long as it ends with this */
+```
+
+For readability reasons, multiline comments **cannot** have any statement directly after in the same line.
+
+```c
+/* don't do this, it'll error! */ some_command
+
+some_command // do this instead, it's prettier!
+```
 
 ## Per-implementation details
 
-each language implementation would include the following, defined in code:
-- definitions for commands
-    - this is the most important part, because it's what makes Tickscript worth it - less need to manually work with hex codes, opening up a more accessible language for newcomers and oldies alike
-    - command names may be namespaced
-- a standard library, which would be available for any Tickscript file to use as a module
-    - the module does not need to be called "std"; and most likely will not for accessibility to people not experienced with programming
-        - some ideas (for RHM international) are "megamix", "rh3ds", etc.
-        - the stardard library MUST NOT be split across several modules, like the Python standard libraries are
-    - the contents of the standard library will consist of different subs and constants to enhance the tickflowing experience and give some values a meaning through a name
-        - some example of constants that could be defined are: sub names, button codes, scene or game IDs, etc.
-        - the standard library may include its items inside namespaces
-        - how standard library subs will be written will be described in future versions of the specification, currently Tickscript DOES NOT OFFICIALLY SUPPORT STANDARD LIBRARY SUBS, only constants 
-- a "runtime"
-    - this is a setup system that allows the code to be simplified, similar to Tickflow templates such as EHG's and TheAltDoc's
-    - it consists of pre-written Tickscript that can be used as a base for less complex charts and projects
-    - the runtime must include references or calls to at least one sub that will be defined in the tickflower's code, and may also optionally include references or calls to more user-defined subs or constants
-    - the runtime can be overriden at any time by creating a sub named "_start", which will override the runtime's original "_start" sub
-        - ways to make runtime overrides more modular may be included in future versions of the specification
-    - how the runtime will be written and distributed will be described in future versions of the specification, currently Tickscript DOES NOT OFFICIALLY SUPPORT RUNTIMES
+Each language implementation would include the following, defined within the compiler code or external Tickscript files:
+
+### Definitions for commands:
+
+This is the most important part, because it's what makes Tickscript worth it - less need to manually work with hex codes, opening up a more accessible language for newcomers and oldies alike.
+
+Command names may be namespaced.
+
+### A standard library
+
+This library would be available for any Tickscript file for this specific language implementation to use as a module.
+
+The module does not need to be called `std`, in fact, it most likely should not, for accessibility to people not experienced with programming. Descriptive names for the specific implementation are preferred. (e.g. `megamix` or `rh3ds` for RH Megamix)
+
+The standard library **must not** be split across several different modules, instead being one unified module, which can then be namespaced.
+
+The contents of the standard library will consist of different subs and constants, made to enhance the tickflowing experience, as well as give some values a meaning through a name. Some example of constants that could be defined are: sub names, button codes, scene or game IDs, etc.
+
+> Note: How standard library subs will be written will be described in future versions of the specification, currently Tickscript as defined by this spec **does not officially support standard library subs**, only constants.
+
+### A runtime
+A runtime is a setup system that allows the code to be simplified, similar to Tickflow templates such as EHG's and TheAltDoc's.
+
+A runtime consists of pre-written Tickscript that can be used as a base for less complex charts and projects. It must include references or calls to at least one sub to be defined in the final tickflower's code, and may also optionally include references or calls to more user-defined subs or constants.
+
+For more advanced users, the runtime can be overriden at any time by creating a sub named `_start`, which will override the runtime's original `_start` sub. Ways to make runtime overrides more modular may be included in future versions of the specification.
+
+> Note: how the runtime will be written and distributed will be described in future versions of the specification, currently Tickscript as defined in this spec **does not officially support runtimes**
 
 ## What's left?
 - Specify a method for runtime and standard library sub creation and distribution
