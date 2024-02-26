@@ -2,7 +2,7 @@ use std::fs::File;
 
 use tickflow_parse::*;
 
-const TEST_TICKFLOW: &str = include_str!("old/test.tickflow");
+const TEST_TICKFLOW: &str = include_str!("test.tickflow");
 
 pub fn main() {
     let a = vec![

@@ -1,8 +1,0 @@
-- parse the entirety of the document, with every kind of statement and directive
-- pre-process directives (include/alias particularly)
-- process file in order (statement by statement), add commands, labels and constants to the context
-- final product can be directly compiled
-
-todo:
-    - how to get pointers to labels before everything is compiled
-    - maybe resolve labels in a step after everything else is compiled?

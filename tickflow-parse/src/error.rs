@@ -6,7 +6,7 @@ use thiserror::Error;
 pub enum Error {
     #[error("file IO error: {0}")]
     IoError(std::io::Error),
-    #[error("tickflow error on {fname}:{line}: {error}")]
+    #[error("tickflow error on {fname}:{line} - {error}")]
     OldTfError {
         fname: String,
         line: usize,
