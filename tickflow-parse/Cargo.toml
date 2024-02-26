@@ -1,0 +1,12 @@
+[package]
+name = "tickflow-parse"
+description = "Parser for the the Tickflow and Tickscript languages"
+edition = "2021"
+
+version.workspace = true
+
+[dependencies]
+nom = "7.1"
+regex = "1.9"
+thiserror = "1.0"
+lazy_static = "1.4"

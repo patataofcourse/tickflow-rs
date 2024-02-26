@@ -1,0 +1,58 @@
+### TICKFLOW LANGUAGE SPECIFICATION ###
+for Tickompiler 1.10
+
+there's three types of values:
+- integers (decimal, hex, or binary): 0, 1, 549023, 0x29A, 0b10110
+- strings with an optional prefix u for utf-16 strings: "hello ascii", u"hello utf-16"
+    - the following characters can be escaped with a backlash: \ "
+    - newlines are represented with \n
+- identifiers: must start with a letter, $ or _. characters after that can also be numeric
+
+you can apply operations to integers:
+- addition: a + b
+- substraction: a - b
+- multiplication: a * b
+- integer division: a / b
+- shift left: a << b
+- shift right: a >> b
+- bitwise AND: a & b
+- bitwise OR: a | b
+- bitwise XOR: a ^ b
+- negation: -a
+you can use (brackets) to change the order of operations
+
+each statement takes up a line
+a line can be empty
+there are four kinds of statements:
+- directives
+    - of the form #$name $($args )*
+    - $name is specified by the directive definition
+    - $args is feeded to the directive. args taken depends on the directive
+    - the following directives exist:
+        - #alias $name $value
+            - name: identifier to set the alias to
+            - value: command number to set the alias to. 10-bit
+        - #include $filename
+            - filename: string, name of the file to include
+        - #index $index
+            - index: index to set this tickflow file to target
+        - #start $pos
+            - pos: binary position in the file where the start sub is 
+        - #assets $pos
+            - pos: binary position in the file where the assets sub is
+- labels
+    - of the form $name:
+    - creates a label of the name $name that can be referred to as a variable
+- commands
+    - known as functions in the original tickflow specs
+    - of the form $cmd $(<$arg0>)? $($args),*
+        - $cmd: the name or integer value for the command. 10-bit
+        - $arg0: the argument0 value. optional, defaults to 0. some named commands have preset argument0s. 18-bit
+        - $args: the different argument values for the command. NO TRAILING COMMAS!
+- constant definitions
+    - of the form $var:ident = $val:value
+    - sets the constant named $var to the value described by $val
+
+comments start with a //
+there are no multiline comments
+collapsible blocks of code exist informally through the notepad++ language definition, by creating comments with opening or closing braces ("//{" and "//}")

@@ -1,11 +1,16 @@
+[workspace]
+members = ["tickflow-parse"]
+
+[workspace.package]
+version = "0.0.1"
+
 [package]
-name = "tickflow-rs"
+name = "tickflow"
 authors = ["patataofcourse"]
 description = "Rust library to manage Tickflow (Rhythm Heaven bytecode) formats."
-version = "0.0.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version.workspace = true
 
 [dependencies]
 bytestream = "0.4"
