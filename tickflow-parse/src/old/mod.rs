@@ -154,7 +154,7 @@ pub enum Statement {
 
 #[derive(Debug, Clone)]
 pub enum ParsedStatement {
-    Label(String),
+    Label(String, usize),
     Command {
         cmd: CommandName,
         arg0: Option<u32>,
@@ -194,9 +194,26 @@ impl Context {
         for (l, st) in statements {
             match st {
                 Statement::Constant { name, value } => {
-                    constants.insert(name, Self::parse_value(&constants, value, fname, l)?);
+                    let value = Self::parse_value(&constants, value, fname, l)?;
+
+                    // insert new constant into map, error on duplicated constant
+                    if let Some((old_value, old_l)) = constants.insert(name.clone(), (value, l)) {
+                        Err(OldTfError::RedefinedConstant(name, old_value, old_l).with_ctx(fname, l))?;
+                    }
                 }
-                Statement::Label(c) => parsed_cmds.push(ParsedStatement::Label(c.0)),
+                Statement::Label(c) => {
+                    // try to find if this label already exists
+                    if let Some(ParsedStatement::Label(old_name, old_l)) = parsed_cmds.iter().find(|cmd| {
+                        let ParsedStatement::Label(existing_label, _) = cmd else {
+                            return false;
+                        };
+                        &*c == existing_label
+                    }) {
+                        Err(OldTfError::RedefinedLabel(old_name.clone(), *old_l).with_ctx(fname, l))?
+                    }
+
+                    parsed_cmds.push(ParsedStatement::Label(c.0, l))
+                }
                 Statement::Command { cmd, arg0, args } => {
                     let cmd = match &cmd {
                         CommandName::Raw(_) => cmd,
@@ -231,7 +248,7 @@ impl Context {
 
         let find_label = |lname| {
             move |c: &ParsedStatement| {
-                if let ParsedStatement::Label(name) = c {
+                if let ParsedStatement::Label(name, _) = c {
                     if name == lname {
                         Some(())
                     } else {
@@ -276,7 +293,7 @@ impl Context {
     }
 
     fn parse_value(
-        constants: &HashMap<Identifier, ParsedValue>,
+        constants: &HashMap<Identifier, (ParsedValue, usize)>,
         value: Value,
         fname: &str,
         line_num: usize,
@@ -301,8 +318,8 @@ impl Context {
             //TODO: ensure all labels used exist
             Value::Constant(c) => Ok(constants
                 .get(&c)
-                .map(Clone::clone)
-                .unwrap_or(ParsedValue::Label(c.0))),
+                .cloned()
+                .unwrap_or((ParsedValue::Label(c.0), line_num)).0),
             Value::Integer(c) => Ok(ParsedValue::Integer(c)),
             Value::String { value, is_unicode } => Ok(ParsedValue::String { value, is_unicode }),
         }
@@ -382,7 +399,7 @@ impl Context {
 impl From<ParsedStatement> for Statement {
     fn from(value: ParsedStatement) -> Self {
         match value {
-            ParsedStatement::Label(name) => Statement::Label(Identifier(name)),
+            ParsedStatement::Label(name, _) => Statement::Label(Identifier(name)),
             ParsedStatement::Command { cmd, arg0, args } => Statement::Command {
                 cmd,
                 arg0: arg0.map(|a0| Value::Integer(a0 as i32)),
@@ -399,5 +416,11 @@ impl From<ParsedValue> for Value {
             ParsedValue::String { value, is_unicode } => Value::String { value, is_unicode },
             ParsedValue::Label(c) => Value::Constant(Identifier(c)),
         }
+    }
+}
+
+impl From<&ParsedValue> for Value {
+    fn from(value: &ParsedValue) -> Self {
+        value.clone().into()
     }
 }

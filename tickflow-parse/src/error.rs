@@ -46,7 +46,7 @@ pub enum OldTfError {
     MissingRequiredDirective(&'static str),
     #[error("included files cannot have #index, #start, or #assets directives")]
     IncludedDirective,
-    #[error("undefined constant \"{}\"", **_0)]
+    #[error("undefined constant \"{0}\"")]
     UndefinedConstant(crate::old::Identifier),
     #[error("operations can only be applied to integers")]
     InvalidOpType,
@@ -54,6 +54,10 @@ pub enum OldTfError {
     InvalidArg0Type,
     #[error("arg0 value {0:05x} is out of range (must be 18 bits at most)")]
     OOBArg0(i32),
+    #[error("constant \"{0}\" was previously defined to be {} in line {2}", Into::<crate::old::Value>::into(_1))]
+    RedefinedConstant(crate::old::Identifier, crate::old::ParsedValue, usize),
+    #[error("label \"{0}\" was previously defined in line {1}")]
+    RedefinedLabel(String, usize),
 }
 
 impl OldTfError {
