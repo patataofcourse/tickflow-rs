@@ -5,7 +5,7 @@
 //! 2. Run the output `Vec<(usize, Statement)>`, which is a Rust representation of the raw contents of the file, through [Context::parse_file]
 //! 3. You can use the outputted `Vec<ParsedStatement>` with the main `tickflow` library
 
-//TODO: split the entire module in more files
+//TODO: split the entire module in more files (?)
 
 use std::{collections::HashMap, io::Read, ops::Deref};
 

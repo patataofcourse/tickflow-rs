@@ -78,7 +78,7 @@ impl Display for super::Value {
             Self::Negated(c) => write!(f, "-{}", c),
             //TODO: what should be the threshold?
             Self::Integer(c) => {
-                if c.abs() >= 9 {
+                if c.abs() >= 0xA {
                     write!(f, "0x{c:x}")
                 } else {
                     write!(f, "{c}")

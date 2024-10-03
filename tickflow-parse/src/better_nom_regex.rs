@@ -1,3 +1,6 @@
+/// modified version of part of the nom_regex library
+/// https://docs.rs/nom-regex/0.2.0/src/nom_regex/lib.rs.html
+
 use nom::{
     error::{ErrorKind, ParseError},
     Err, IResult, Slice,
@@ -21,12 +24,17 @@ pub fn re_capture<'a, E>(re: Regex) -> impl Fn(&'a str) -> IResult<&'a str, Vec<
 where
     E: ParseError<&'a str>,
 {
-    //TODO: pls unfuck this code it makes my eyes bleed
     move |i| {
         if let Some(c) = re.captures(i) {
             let v: Vec<_> = c
                 .iter()
-                .map(|m| m.map(|m| i.slice(m.start()..m.end())).unwrap_or(""))
+                .map(|m| {
+                    if let Some(m) = m {
+                        i.slice(m.start()..m.end())
+                    } else {
+                        ""
+                    }
+                })
                 .collect();
             let offset = c.iter().next().unwrap().map(|m| m.end()).unwrap_or(0);
             Ok((i.slice(offset..), v))
