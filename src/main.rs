@@ -1,5 +1,5 @@
 use std::{fs::File, io::Result};
-use tickflow_rs::{
+use tickflow::{
     data::{gold::GoldOp, megamix::MegamixOp, OperationSet},
     extract::{self, gold::TICKOVY_OFFSET_US, megamix::CODE_OFFSET},
 };

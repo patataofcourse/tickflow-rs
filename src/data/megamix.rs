@@ -7,10 +7,15 @@ use crate::{
     tf_op, tf_op_args,
 };
 
+//TODO: derive macro that creates specifications automatically
 pub enum MegamixOp {
+    //#[tickflow_op(0)]
     CallSub {
+        //#[arg(0)]
         sub: u32,
+        //#[arg(1, default=0)]
         time: Option<u32>,
+        //#[arg(2, default=???)]
         cat: Option<u32>,
     },
     CallFunc {
