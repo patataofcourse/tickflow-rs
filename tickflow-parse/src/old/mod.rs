@@ -198,17 +198,20 @@ impl Context {
 
                     // insert new constant into map, error on duplicated constant
                     if let Some((old_value, old_l)) = constants.insert(name.clone(), (value, l)) {
-                        Err(OldTfError::RedefinedConstant(name, old_value, old_l).with_ctx(fname, l))?;
+                        Err(OldTfError::RedefinedConstant(name, old_value, old_l)
+                            .with_ctx(fname, l))?;
                     }
                 }
                 Statement::Label(c) => {
                     // try to find if this label already exists
-                    if let Some(ParsedStatement::Label(old_name, old_l)) = parsed_cmds.iter().find(|cmd| {
-                        let ParsedStatement::Label(existing_label, _) = cmd else {
-                            return false;
-                        };
-                        &*c == existing_label
-                    }) {
+                    if let Some(ParsedStatement::Label(old_name, old_l)) =
+                        parsed_cmds.iter().find(|cmd| {
+                            let ParsedStatement::Label(existing_label, _) = cmd else {
+                                return false;
+                            };
+                            &*c == existing_label
+                        })
+                    {
                         Err(OldTfError::RedefinedLabel(old_name.clone(), *old_l).with_ctx(fname, l))?
                     }
 
@@ -319,7 +322,8 @@ impl Context {
             Value::Constant(c) => Ok(constants
                 .get(&c)
                 .cloned()
-                .unwrap_or((ParsedValue::Label(c.0), line_num)).0),
+                .unwrap_or((ParsedValue::Label(c.0), line_num))
+                .0),
             Value::Integer(c) => Ok(ParsedValue::Integer(c)),
             Value::String { value, is_unicode } => Ok(ParsedValue::String { value, is_unicode }),
         }

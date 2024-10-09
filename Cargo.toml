@@ -1,5 +1,5 @@
 [workspace]
-members = ["tickflow-parse"]
+members = ["tickflow-parse", "tickflow-binaries"]
 
 [workspace.package]
 version = "0.0.1"
@@ -14,3 +14,4 @@ version.workspace = true
 
 [dependencies]
 bytestream = "0.4"
+tickflow-binaries = { path = "tickflow-binaries" }

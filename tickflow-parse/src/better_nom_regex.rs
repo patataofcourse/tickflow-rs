@@ -1,6 +1,5 @@
 /// modified version of part of the nom_regex library
 /// https://docs.rs/nom-regex/0.2.0/src/nom_regex/lib.rs.html
-
 use nom::{
     error::{ErrorKind, ParseError},
     Err, IResult, Slice,

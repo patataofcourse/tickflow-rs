@@ -1,10 +1,9 @@
 use bytestream::ByteOrder;
 
-use crate::{
-    data::{
-        btks::BtksType, ArgsTickflowOpDef, OperationSet, Pointer, RawTickflowOp, TickflowOpDef,
-    },
-    tf_op, tf_op_args,
+use crate::{tf_op, tf_op_args};
+
+use tickflow_binaries::data::{
+    btks::BtksType, ArgsTickflowOpDef, OperationSet, Pointer, RawTickflowOp, TickflowOpDef,
 };
 
 //TODO: derive macro that creates specifications automatically

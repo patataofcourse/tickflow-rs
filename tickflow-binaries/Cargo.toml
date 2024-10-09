@@ -1,0 +1,9 @@
+[package]
+name = "tickflow-binaries"
+description = "Binary parser for Tickflow bytecode languages"
+edition = "2021"
+
+version.workspace = true
+
+[dependencies]
+bytestream = "0.4.1"

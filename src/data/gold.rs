@@ -1,8 +1,9 @@
 use bytestream::ByteOrder;
 
-use crate::{
-    data::{btks::BtksType, ArgsTickflowOpDef, OperationSet, RawTickflowOp, TickflowOpDef},
-    tf_op_args,
+use crate::tf_op_args;
+
+use tickflow_binaries::data::{
+    btks::BtksType, ArgsTickflowOpDef, OperationSet, RawTickflowOp, TickflowOpDef,
 };
 
 pub enum GoldOp {
