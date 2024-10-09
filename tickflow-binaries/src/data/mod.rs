@@ -4,6 +4,8 @@ pub mod btks;
 use btks::BtksType;
 use bytestream::ByteOrder;
 
+//TODO: figure out if most of this should stay here or move to another library like tickflow-parse (i think this should stay here and be a dependency of tickflow-parse)
+
 /// Tickflow operation as decompiled, before parsing
 #[derive(Debug, Clone)]
 pub struct RawTickflowOp {
@@ -114,16 +116,17 @@ pub enum Pointer {
 }
 
 /// Trait for every type of Tickflow operation.
-/// You can see implementations for Megamix (international), Fever, and DS in this library.
 pub trait OperationSet {
     const BTKS_TICKFLOW_TYPE: BtksType;
     const ENDIAN: ByteOrder;
 
     //TODO: tempo operations, sub operations
+    //TODO: adapt to Fever/DS' quirks
 
     fn get_operation(op: RawTickflowOp) -> Self
     where
         Self: Sized;
+
     fn get_call_operations() -> Vec<ArgsTickflowOpDef>;
     fn is_call_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOpDef> {
         for call_op in Self::get_call_operations() {

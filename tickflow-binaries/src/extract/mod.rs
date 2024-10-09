@@ -10,6 +10,8 @@ use std::{
 
 type Result<T> = std::io::Result<T>; //TODO: make my own error type
 
+//TODO: split all this into the binaries side (command/operation types), the language side (cmd name/argument parsing), and then a combined trait
+
 #[derive(Debug, Clone)]
 pub struct Pointer {
     at: usize,
