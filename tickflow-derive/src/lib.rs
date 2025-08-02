@@ -37,7 +37,7 @@ fn derive_operation_set(item: TokenStream2) -> Result<TokenStream2> {
 
     let name_span = attr.get_single_path_segment().unwrap().span();
 
-    let params = kv_parser(attr.get_value_tokens(), name_span)?;
+    let params = kv_parser(attr.get_value_tokens())?;
 
     let Some(btks_type) = params.get("btks_type") else {
         Err(venial::Error::new_at_span(
@@ -89,23 +89,23 @@ fn derive_operation_set(item: TokenStream2) -> Result<TokenStream2> {
     })
 }
 
-fn kv_parser(tokens: &[TokenTree], name_span: Span) -> Result<HashMap<String, TokenStream2>> {
+fn kv_parser(tokens: &[TokenTree]) -> Result<HashMap<String, TokenStream2>> {
     let pairs: Vec<_> = tokens
         .split(|t| matches!(t, TokenTree::Punct(p) if p.as_char() == ','))
         .collect();
 
     let mut out = HashMap::new();
-    for val in pairs {
-        let mut val = val.iter();
+    for val_arr in pairs {
+        let mut val = val_arr.iter();
         let Some(TokenTree::Ident(ident)) = val.next() else {
-            Err(venial::Error::new_at_span(
-                name_span,
+            Err(venial::Error::new_at_tokens(
+                val_arr.iter().cloned().collect::<TokenStream2>(),
                 "attribute arguments must follow a = b, ... pattern",
             ))?
         };
         if !matches!(val.next(), Some(TokenTree::Punct(p)) if p.as_char() == '=') {
-            Err(venial::Error::new_at_span(
-                name_span,
+            Err(venial::Error::new_at_tokens(
+                val_arr.iter().cloned().collect::<TokenStream2>(),
                 "attribute arguments must follow a = b, ... pattern",
             ))?
         }
