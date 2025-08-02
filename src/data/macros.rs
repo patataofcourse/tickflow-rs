@@ -74,7 +74,7 @@ macro_rules! tf_op {
 macro_rules! tf_op_vec {
     ($($cmdname:literal $(<$arg0:literal>)? $([$scene:literal])? $(,)?),*) => {
         vec![$(
-            tf_op!(
+            $crate::tf_op!(
                 $cmdname
                 $(<$arg0>)?,
                 $(, $scene)?
@@ -100,7 +100,7 @@ macro_rules! args_tf_op_vec {
         $(;)?
     ] => {
         vec![$(
-            args_tf_op!(
+            $crate::args_tf_op!(
                 $cmdname
                 $(<$arg0>)?,
                 [ $(($argnum $(, $special)?)),* ]

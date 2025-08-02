@@ -1,7 +1,7 @@
 use bytestream::ByteOrder;
 use tickflow_binaries::data::{btks::BtksType, ArgsTickflowOpDef, OperationSet, RawTickflowOp, TickflowOpDef};
 
-use crate::{args_tf_op, args_tf_op_vec, tf_op, tf_op_vec};
+use crate::{args_tf_op, args_tf_op_vec, tf_op_vec};
 
 pub enum FeverOp {
     Other(RawTickflowOp),

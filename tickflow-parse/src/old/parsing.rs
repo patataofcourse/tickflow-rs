@@ -103,7 +103,7 @@ pub fn read_statement(input: &str, fname: &str, line_num: usize) -> Result<State
             eof,
         ))(input)
         .map_err(|c| {
-            println!("{c}");
+            println!("{c}"); // TODO: ?
             OldTfError::SyntaxError.with_ctx(fname, line_num)
         })?;
         let args = args.map(|c| c.1).unwrap_or(vec![]);
