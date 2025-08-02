@@ -3,7 +3,7 @@ use std::{
     io::{Result, Write},
 };
 use tickflow::{
-    data::{fever::FeverOp, gold::GoldOp, megamix::MegamixOp, OperationSet},
+    data::{fever::FeverUsOp, gold::GoldOp, megamix::MegamixOp, OperationSet},
     extract::{
         self, fever::CODE_OFFSET as OFFSET_RHF, gold::TICKOVY_OFFSET_US,
         megamix::CODE_OFFSET as OFFSET_RHM,
@@ -27,13 +27,13 @@ fn main() -> Result<()> {
 
     let mut f = File::open("test_files/main.dol")?;
     let mut fw = File::create("test_files/characterIntro.btk")?;
-    let btks = extract::extract::<FeverOp>(&mut f, OFFSET_RHF, &[0x802B5D40])?;
+    let btks = extract::extract::<FeverUsOp>(&mut f, OFFSET_RHF, &[0x802B5D40])?;
 
     let mut fw2 = File::create("test_files/characterIntro.btk.out")?;
 
     writeln!(fw2, "{:#08x?}", btks.ptro)?;
 
-    for op in btks.to_raw_tickflow_ops(FeverOp::ENDIAN)? {
+    for op in btks.to_raw_tickflow_ops(FeverUsOp::ENDIAN)? {
         let op = tickflow_parse::old::Statement::Command {
             cmd: tickflow_parse::old::CommandName::Raw(op.op as i32),
             arg0: {
@@ -50,7 +50,7 @@ fn main() -> Result<()> {
         writeln!(fw2, "{}", op)?;
     }
 
-    btks.to_btks_file(&mut fw, FeverOp::ENDIAN)?;
+    btks.to_btks_file(&mut fw, FeverUsOp::ENDIAN)?;
 
     Ok(())
 }

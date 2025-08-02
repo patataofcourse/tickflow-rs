@@ -3,12 +3,12 @@ use tickflow_binaries::data::{btks::BtksType, ArgsTickflowOpDef, OperationSet, R
 
 use crate::{args_tf_op, args_tf_op_vec, tf_op_vec};
 
-pub enum FeverOp {
+pub enum FeverUsOp {
     Other(RawTickflowOp),
 }
 
-impl OperationSet for FeverOp {
-    const BTKS_TICKFLOW_TYPE: BtksType = BtksType::Fever;
+impl OperationSet for FeverUsOp {
+    const BTKS_TICKFLOW_TYPE: BtksType = BtksType::FeverUs;
 
     const ENDIAN: ByteOrder = ByteOrder::BigEndian;
 
