@@ -40,8 +40,11 @@ pub struct TempoVal {
 pub enum BtksType {
     MegamixIntl = 0,
     MegamixJp = 1,
-    Fever = 2,
-    Gold = 3,
+    FeverJp = 2,
+    FeverUs = 3,
+    FeverEu = 4,
+    FeverKr = 5,
+    Gold = 6,
     Unspecified = -1,
 }
 
