@@ -29,8 +29,8 @@ impl Pointer {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PointerType {
-    Data,
-    Tickflow,
+    Data = 0,
+    Tickflow = 1,
 }
 
 pub fn binary_to_raw_tf_op(
