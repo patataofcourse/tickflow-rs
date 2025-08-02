@@ -10,8 +10,6 @@ use std::{
 
 type Result<T> = std::io::Result<T>; //TODO: make my own error type
 
-//TODO: split all this into the binaries side (command/operation types), the language side (cmd name/argument parsing), and then a combined trait
-
 #[derive(Debug, Clone)]
 pub struct Pointer {
     at: usize,
@@ -200,7 +198,7 @@ fn read_string<F: Read + Seek>(
     if is_unicode {
         loop {
             let chr = u16::read_from(file, endian)?;
-            string_data.extend(chr.to_le_bytes());
+            string_data.extend(chr.to_le_bytes()); // TODO: ???
             if chr == 0 {
                 break;
             }

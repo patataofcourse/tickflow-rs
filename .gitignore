@@ -1,5 +1,6 @@
 /target
 /Cargo.lock
 .vscode
+*.code-workspace
 
 /test_files
