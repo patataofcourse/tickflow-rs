@@ -1,4 +1,7 @@
 use bytestream::ByteOrder;
+use tickflow_derive::OperationSet;
+
+use crate as tickflow;
 
 use crate::{args_tf_op, args_tf_op_vec, tf_op, tf_op_vec};
 
@@ -7,6 +10,8 @@ use tickflow_binaries::data::{
 };
 
 //TODO: derive macro that creates specifications automatically
+#[derive(OperationSet)]
+#[tickflow(btks_type=BtksType::MegamixIntl, endian=ByteOrder::LittleEndian)]
 pub enum MegamixOp {
     //#[tickflow_op(0)]
     CallSub {
@@ -124,7 +129,7 @@ pub enum MegamixOp {
     Other(RawTickflowOp),
 }
 
-impl OperationSet for MegamixOp {
+/* impl OperationSet for MegamixOp {
     const BTKS_TICKFLOW_TYPE: BtksType = BtksType::MegamixIntl;
     const ENDIAN: ByteOrder = ByteOrder::LittleEndian;
 
@@ -262,3 +267,4 @@ impl OperationSet for MegamixOp {
         tf_op_vec![0x7, 0x8]
     }
 }
+ */
