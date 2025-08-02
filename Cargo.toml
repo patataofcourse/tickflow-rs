@@ -14,4 +14,5 @@ version.workspace = true
 
 [dependencies]
 bytestream = "0.4"
+tickflow-parse = { path = "tickflow-parse" }
 tickflow-binaries = { path = "tickflow-binaries" }

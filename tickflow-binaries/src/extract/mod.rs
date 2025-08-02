@@ -20,6 +20,7 @@ pub struct Pointer {
 impl Pointer {
     pub fn as_ptro(&self) -> [u8; 5] {
         let mut out = [0; 5];
+        // TODO: this should rely on endianness
         out[..4].copy_from_slice(&(self.at as u32).to_le_bytes());
         out[4] = self.ptype as u8;
         out
@@ -28,8 +29,32 @@ impl Pointer {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PointerType {
-    Tickflow,
     Data,
+    Tickflow,
+}
+
+pub fn binary_to_raw_tf_op(
+    data: &mut impl Read,
+    scene: i32,
+    endian: ByteOrder,
+) -> Result<(u32, RawTickflowOp)> {
+    let op_int = u32::read_from(data, endian)?;
+    let op = (op_int & 0x3FF) as u16;
+    let arg0 = op_int >> 14;
+    let arg_count = ((op_int & 0x3C00) >> 10) as u8;
+    let mut args = vec![];
+    for _ in 0..arg_count {
+        args.push(u32::read_from(data, endian)?);
+    }
+    Ok((
+        op_int,
+        RawTickflowOp {
+            op,
+            arg0,
+            args: args.clone(),
+            scene,
+        },
+    ))
 }
 
 pub fn extract<T: OperationSet>(
@@ -63,7 +88,7 @@ pub fn extract<T: OperationSet>(
         pos += 1
     }
 
-    for pointer in &pointers {
+    for pointer in &mut pointers {
         bincmds.splice(
             pointer.at..pointer.at + 4,
             if pointer.ptype == PointerType::Tickflow {
@@ -73,6 +98,12 @@ pub fn extract<T: OperationSet>(
             }
             .to_le_bytes(),
         );
+
+        pointer.points_to = if pointer.ptype == PointerType::Tickflow {
+            functions[&pointer.points_to]
+        } else {
+            pointer.points_to
+        }
     }
 
     // TODO: tempos
@@ -109,27 +140,18 @@ fn extract_tickflow_at<T: OperationSet>(
     let mut pointers = vec![];
     let mut depth = 0;
     while !done {
-        let op_int = u32::read_from(file, T::ENDIAN)?;
-        let op = (op_int & 0x3FF) as u16;
-        let arg0 = op_int >> 14;
-        let arg_count = ((op_int & 0x3C00) >> 10) as u8;
-        let mut args = vec![];
-        for _ in 0..arg_count {
-            args.push(u32::read_from(file, T::ENDIAN)?);
-        }
-        let tf_op = RawTickflowOp {
-            op,
-            arg0,
-            args: args.clone(),
-            scene,
-        };
+        let (op_int, mut tf_op) = binary_to_raw_tf_op(file, scene, T::ENDIAN)?;
 
         //TODO: what if some operations are multiple? make sure that never happens,
         //or offer an actual alternative
         if let Some(c) = T::is_scene_operation(&tf_op) {
-            scene = if c == -1 { arg0 } else { args[c as usize] } as i32;
+            scene = if c == -1 {
+                tf_op.arg0
+            } else {
+                tf_op.args[c as usize]
+            } as i32;
         } else if let Some(c) = T::is_call_operation(&tf_op, scene) {
-            let pointer_pos = args[c.args[0].0 as usize];
+            let pointer_pos = tf_op.args[c.args[0].0 as usize];
             let mut is_in_queue = false;
             'found: for (position, _) in &*queue {
                 if *position == pointer_pos {
@@ -140,7 +162,7 @@ fn extract_tickflow_at<T: OperationSet>(
             if !is_in_queue {
                 queue.push((pointer_pos, scene));
             }
-            args[c.args[0].0 as usize] = pointer_pos - base_offset;
+            tf_op.args[c.args[0].0 as usize] = pointer_pos - base_offset;
 
             pointers.push(Pointer {
                 at: bincmds.len() + (4 * (c.args[0].0 + 1)) as usize,
@@ -158,7 +180,7 @@ fn extract_tickflow_at<T: OperationSet>(
                 bindata.extend(read_string(
                     base_offset,
                     file,
-                    args[arg.0 as usize].into(),
+                    tf_op.args[arg.0 as usize].into(),
                     arg.1,
                     endian,
                 )?);
@@ -174,7 +196,7 @@ fn extract_tickflow_at<T: OperationSet>(
             done = true;
         }
         op_int.write_to(bincmds, T::ENDIAN)?;
-        for arg in args {
+        for arg in tf_op.args {
             arg.write_to(bincmds, T::ENDIAN)?;
         }
     }

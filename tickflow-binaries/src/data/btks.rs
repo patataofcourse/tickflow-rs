@@ -1,8 +1,10 @@
-use std::io::{self, Seek, SeekFrom, Write};
+use std::io::{self, Cursor, Seek, SeekFrom, Write};
 
-use crate::extract::Pointer;
+use crate::{data::{TickflowOp}, extract::{self, Pointer}};
 
 use bytestream::{ByteOrder, StreamWriter};
+
+type Result<T> = std::io::Result<T>; //TODO: make my own error type
 
 #[derive(Debug, Clone)]
 pub struct BTKS {
@@ -126,6 +128,16 @@ impl BTKS {
         num_sections.write_to(f, endian)?;
 
         Ok(())
+    }
+
+    pub fn to_raw_tickflow_ops(&self, endian: ByteOrder) -> Result<Vec<TickflowOp>> {
+        let mut data = Cursor::new(&self.flow.data);
+        let mut ops = vec![];
+        while data.position() != data.get_ref().len() as u64 {
+            let raw_op = extract::binary_to_raw_tf_op(&mut data, -1, endian)?.1;
+            ops.push(raw_op.into())
+        }
+        Ok(ops)
     }
 }
 
