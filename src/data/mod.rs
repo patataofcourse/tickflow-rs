@@ -1,5 +1,7 @@
 pub mod macros;
 
+/// Data representation for Rhythm Heaven Fever (Wii)
+pub mod fever;
 /// Data representation for Rhythm Heaven (NDS)
 pub mod gold;
 /// Data representation for Rhythm Heaven Megamix (3DS)

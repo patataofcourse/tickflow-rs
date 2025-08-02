@@ -3,8 +3,11 @@ use std::{
     io::{Result, Write},
 };
 use tickflow::{
-    data::{gold::GoldOp, megamix::MegamixOp, OperationSet},
-    extract::{self, gold::TICKOVY_OFFSET_US, megamix::CODE_OFFSET},
+    data::{fever::FeverOp, gold::GoldOp, megamix::MegamixOp, OperationSet},
+    extract::{
+        self, fever::CODE_OFFSET as OFFSET_RHF, gold::TICKOVY_OFFSET_US,
+        megamix::CODE_OFFSET as OFFSET_RHM,
+    },
 };
 
 const MEGAMIX_GAME: usize = 0;
@@ -14,13 +17,23 @@ const MEGAMIX_NAME: &str = extract::megamix::LOCATIONS_US.games[MEGAMIX_GAME].0;
 
 fn main() -> Result<()> {
     let mut f = File::open("test_files/code.bin")?;
-    let btks = extract::extract::<MegamixOp>(&mut f, CODE_OFFSET, &[MEGAMIX_POS])?;
+    let btks = extract::extract::<MegamixOp>(&mut f, OFFSET_RHM, &[MEGAMIX_POS])?;
     let mut fw = File::create(format!("test_files/{}.btk", MEGAMIX_NAME))?;
-    let mut fw2 = File::create(format!("test_files/{MEGAMIX_NAME}.btk.out"))?;
+
+    btks.to_btks_file(&mut fw, MegamixOp::ENDIAN)?;
+
+    //let mut f = File::open("test_files/ovy9_90.bin")?;
+    //extract::extract::<GoldOp>(&mut f, TICKOVY_OFFSET_US, &[])?;
+
+    let mut f = File::open("test_files/main.dol")?;
+    let mut fw = File::create("test_files/characterIntro.btk")?;
+    let btks = extract::extract::<FeverOp>(&mut f, OFFSET_RHF, &[0x802B5D40])?;
+
+    let mut fw2 = File::create("test_files/characterIntro.btk.out")?;
 
     writeln!(fw2, "{:#08x?}", btks.ptro)?;
 
-    for op in btks.to_raw_tickflow_ops(MegamixOp::ENDIAN)? {
+    for op in btks.to_raw_tickflow_ops(FeverOp::ENDIAN)? {
         let op = tickflow_parse::old::Statement::Command {
             cmd: tickflow_parse::old::CommandName::Raw(op.op as i32),
             arg0: {
@@ -32,15 +45,12 @@ fn main() -> Result<()> {
                 None
             } else {Some(tickflow_parse::old::Value::Integer(temp))}
             },
-            args: op.args.iter().map(|c| tickflow_parse::old::Value::String{value:format!("{c:?}"), is_unicode: false}).collect(),
+            args: op.args.iter().map(|c| tickflow_parse::old::Value::Integer(match c { tickflow::data::Arg::Unknown(c) => *c as i32, _ => panic!()})).collect(),
         };
         writeln!(fw2, "{}", op)?;
     }
 
-    btks.to_btks_file(&mut fw, MegamixOp::ENDIAN)?;
-
-    //let mut f = File::open("test_files/ovy9_90.bin")?;
-    //extract::extract::<GoldOp>(&mut f, TICKOVY_OFFSET_US, &[])?;
+    btks.to_btks_file(&mut fw, FeverOp::ENDIAN)?;
 
     Ok(())
 }
