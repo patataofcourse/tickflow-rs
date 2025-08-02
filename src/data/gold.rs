@@ -1,6 +1,6 @@
 use bytestream::ByteOrder;
 
-use crate::tf_op_args;
+use crate::args_tf_op;
 
 use tickflow_binaries::data::{
     btks::BtksType, ArgsTickflowOpDef, OperationSet, RawTickflowOp, TickflowOpDef,
@@ -23,7 +23,7 @@ impl OperationSet for GoldOp {
     }
 
     fn get_scene_operation() -> ArgsTickflowOpDef {
-        tf_op_args!(0x100, [(-1)])
+        args_tf_op!(0x100, [(-1)])
     }
 
     fn get_call_operations() -> Vec<ArgsTickflowOpDef> {

@@ -1,7 +1,7 @@
 use bytestream::ByteOrder;
 use tickflow_binaries::data::{btks::BtksType, ArgsTickflowOpDef, OperationSet, RawTickflowOp, TickflowOpDef};
 
-use crate::{tf_op, tf_op_args};
+use crate::{args_tf_op, args_tf_op_vec, tf_op, tf_op_vec};
 
 pub enum FeverOp {
     Other(RawTickflowOp),
@@ -20,22 +20,22 @@ impl OperationSet for FeverOp {
     }
 
     fn get_call_operations() -> Vec<ArgsTickflowOpDef> {
-        vec![
-            tf_op_args!(0, [(0)]),
-            tf_op_args!(1, [(0)]),
-            tf_op_args!(0x100<0>, [(1)]),
+        args_tf_op_vec![
+            0, [(0)];
+            1, [(0)];
+            0x100<0>, [(1)];
         ]
     }
 
     fn get_string_operations() -> Vec<ArgsTickflowOpDef> {
-        vec![
-            tf_op_args!(0x105, [(0)]),
-            tf_op_args!(0x106, [(0)]),
-            tf_op_args!(0x107<0>, [(0)]),
-            tf_op_args!(0x107<1>, [(0)]),
-            tf_op_args!(0x107<2>, [(0)]),
-            tf_op_args!(0x108, [(0)]),
-            tf_op_args!(0x124, [(0)]),
+        args_tf_op_vec![
+            0x105, [(0)];
+            0x106, [(0)];
+            0x107<0>, [(0)];
+            0x107<1>, [(0)];
+            0x107<2>, [(0)];
+            0x108, [(0)];
+            0x124, [(0)];
         ]
     }
 
@@ -44,32 +44,26 @@ impl OperationSet for FeverOp {
     }
 
     fn get_depth_operations() -> Vec<TickflowOpDef> {
-        vec![
-            tf_op!(0x10<0>),
-            tf_op!(0x10<1>),
-            tf_op!(0x10<2>),
-            tf_op!(0x10<3>),
-            tf_op!(0x10<4>),
-            tf_op!(0x10<5>),
-            tf_op!(0x13),
+        tf_op_vec![
+            0x10<0>,
+            0x10<1>,
+            0x10<2>,
+            0x10<3>,
+            0x10<4>,
+            0x10<5>,
+            0x13
         ]
     }
 
     fn get_undepth_operations() -> Vec<TickflowOpDef> {
-        vec![
-            tf_op!(0x12),
-            tf_op!(0x17),
-        ]
+        tf_op_vec![0x12, 0x17]
     }
 
     fn get_scene_operation() -> ArgsTickflowOpDef {
-        tf_op_args!(0x100<0>, [(0)])
+        args_tf_op!(0x100<0>, [(0)])
     }
 
     fn get_return_operations() -> Vec<TickflowOpDef> {
-        vec![
-            tf_op!(2),
-            tf_op!(3),
-        ]
+        tf_op_vec![2, 3]
     }
 }

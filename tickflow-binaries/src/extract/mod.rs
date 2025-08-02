@@ -166,7 +166,6 @@ fn extract_tickflow_at<T: OperationSet>(
                 if !is_in_queue {
                     queue.push((pointer_pos, scene));
                 }
-                println!("{:08x}, {:08x}", &pointer_pos, &base_offset);
                 tf_op.args[c.args[0].0 as usize] = pointer_pos - base_offset;
 
                 pointers.push(Pointer {
@@ -192,8 +191,8 @@ fn extract_tickflow_at<T: OperationSet>(
                     endian,
                 )?);
             }
-            //TODO: check if array_op
         }
+        //TODO: check if array_op
         if T::is_depth_operation(&tf_op, scene).is_some() {
             depth += 1;
         }
