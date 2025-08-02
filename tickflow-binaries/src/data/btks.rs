@@ -91,7 +91,7 @@ impl BTKS {
             ptro_size.write_to(f, endian)?;
             (c.len() as u32).write_to(f, endian)?;
             for pointer in c {
-                f.write_all(&pointer.as_ptro())?;
+                f.write_all(&pointer.as_ptro(endian))?;
             }
         }
 

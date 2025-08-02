@@ -31,7 +31,9 @@ impl OperationSet for FeverOp {
         vec![
             tf_op_args!(0x105, [(0)]),
             tf_op_args!(0x106, [(0)]),
-            tf_op_args!(0x107, [(0)]),
+            tf_op_args!(0x107<0>, [(0)]),
+            tf_op_args!(0x107<1>, [(0)]),
+            tf_op_args!(0x107<2>, [(0)]),
             tf_op_args!(0x108, [(0)]),
             tf_op_args!(0x124, [(0)]),
         ]

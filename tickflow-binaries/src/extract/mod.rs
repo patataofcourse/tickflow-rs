@@ -18,10 +18,11 @@ pub struct Pointer {
 }
 
 impl Pointer {
-    pub fn as_ptro(&self) -> [u8; 5] {
+    pub fn as_ptro(&self, endian: ByteOrder) -> [u8; 5] {
         let mut out = [0; 5];
-        // TODO: this should rely on endianness
-        out[..4].copy_from_slice(&(self.at as u32).to_le_bytes());
+        (self.at as u32)
+            .write_to(&mut out.as_mut_slice(), endian)
+            .unwrap();
         out[4] = self.ptype as u8;
         out
     }
@@ -89,15 +90,17 @@ pub fn extract<T: OperationSet>(
     }
 
     for pointer in &mut pointers {
-        bincmds.splice(
-            pointer.at..pointer.at + 4,
-            if pointer.ptype == PointerType::Tickflow {
+        bincmds.splice(pointer.at..pointer.at + 4, {
+            let val = if pointer.ptype == PointerType::Tickflow {
                 functions[&pointer.points_to]
             } else {
                 pointer.points_to
+            };
+            match T::ENDIAN {
+                ByteOrder::BigEndian => val.to_be_bytes(),
+                ByteOrder::LittleEndian => val.to_le_bytes(),
             }
-            .to_le_bytes(),
-        );
+        });
 
         pointer.points_to = if pointer.ptype == PointerType::Tickflow {
             functions[&pointer.points_to]
@@ -142,37 +145,41 @@ fn extract_tickflow_at<T: OperationSet>(
     while !done {
         let (op_int, mut tf_op) = binary_to_raw_tf_op(file, scene, T::ENDIAN)?;
 
-        //TODO: what if some operations are multiple? make sure that never happens,
-        //or offer an actual alternative
         if let Some(c) = T::is_scene_operation(&tf_op) {
             scene = if c == -1 {
                 tf_op.arg0
             } else {
                 tf_op.args[c as usize]
             } as i32;
-        } else if let Some(c) = T::is_call_operation(&tf_op, scene) {
+        }
+        if let Some(c) = T::is_call_operation(&tf_op, scene) {
             let pointer_pos = tf_op.args[c.args[0].0 as usize];
-            let mut is_in_queue = false;
-            'found: for (position, _) in &*queue {
-                if *position == pointer_pos {
-                    is_in_queue = true;
-                    break 'found;
-                }
-            }
-            if !is_in_queue {
-                queue.push((pointer_pos, scene));
-            }
-            tf_op.args[c.args[0].0 as usize] = pointer_pos - base_offset;
 
-            pointers.push(Pointer {
-                at: bincmds.len() + (4 * (c.args[0].0 + 1)) as usize,
-                points_to: pointer_pos - base_offset,
-                ptype: PointerType::Tickflow,
-            });
-        } else if let Some(c) = T::is_string_operation(&tf_op, scene) {
-            for arg in &c.args {
+            if pointer_pos != 0 {
+                let mut is_in_queue = false;
+                'found: for (position, _) in &*queue {
+                    if *position == pointer_pos {
+                        is_in_queue = true;
+                        break 'found;
+                    }
+                }
+                if !is_in_queue {
+                    queue.push((pointer_pos, scene));
+                }
+                println!("{:08x}, {:08x}", &pointer_pos, &base_offset);
+                tf_op.args[c.args[0].0 as usize] = pointer_pos - base_offset;
+
                 pointers.push(Pointer {
-                    at: bincmds.len() + (4 * (arg.0 + 1)) as usize,
+                    at: bincmds.len() + (4 * (c.args[0].0 + 1)) as usize,
+                    points_to: pointer_pos - base_offset,
+                    ptype: PointerType::Tickflow,
+                });
+            }
+        }
+        if let Some(c) = T::is_string_operation(&tf_op, scene) {
+            for (arg, is_special) in &c.args {
+                pointers.push(Pointer {
+                    at: bincmds.len() + (4 * (arg + 1)) as usize,
                     points_to: bindata.len() as u32,
                     ptype: PointerType::Data,
                 });
@@ -180,19 +187,20 @@ fn extract_tickflow_at<T: OperationSet>(
                 bindata.extend(read_string(
                     base_offset,
                     file,
-                    tf_op.args[arg.0 as usize].into(),
-                    arg.1,
+                    tf_op.args[*arg as usize].into(),
+                    *is_special,
                     endian,
                 )?);
             }
-        //TODO: check if array_op
-        } else if T::is_depth_operation(&tf_op, scene).is_some() {
+            //TODO: check if array_op
+        }
+        if T::is_depth_operation(&tf_op, scene).is_some() {
             depth += 1;
-        } else if T::is_undepth_operation(&tf_op, scene).is_some() {
-            if depth > 0 {
-                depth -= 1;
-            }
-        } else if T::is_return_operation(&tf_op, scene).is_some() && depth <= 0 {
+        }
+        if T::is_undepth_operation(&tf_op, scene).is_some() && depth > 0 {
+            depth -= 1;
+        }
+        if T::is_return_operation(&tf_op, scene).is_some() && depth <= 0 {
             done = true;
         }
         op_int.write_to(bincmds, T::ENDIAN)?;
