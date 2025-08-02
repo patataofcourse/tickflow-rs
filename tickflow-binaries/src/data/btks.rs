@@ -130,6 +130,7 @@ impl BTKS {
         Ok(())
     }
 
+    // for debugging reasons
     pub fn to_raw_tickflow_ops(&self, endian: ByteOrder) -> Result<Vec<TickflowOp>> {
         let mut data = Cursor::new(&self.flow.data);
         let mut ops = vec![];
