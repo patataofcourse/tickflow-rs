@@ -108,7 +108,7 @@ fn derive_operation_set(item: TokenStream2) -> Result<TokenStream2> {
             const ENDIAN: bytestream::ByteOrder = #endian;
 
             fn get_operation(op: tickflow::data::RawTickflowOp) -> Self {
-                match op.op {
+                match op.as_definition() {
                     #(#variants,)*
                     _ => todo!(),
                 }
