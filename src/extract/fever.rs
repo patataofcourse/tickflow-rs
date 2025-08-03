@@ -1,1 +1,1 @@
-pub const CODE_OFFSET: u32 = 0x80003F00;
+pub const CODE_OFFSET: u32 = 0; // because it's read from a DolFile

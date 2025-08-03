@@ -8,6 +8,8 @@ use std::{
     io::{Read, Seek, SeekFrom},
 };
 
+pub mod dol;
+
 type Result<T> = std::io::Result<T>; //TODO: make my own error type
 
 #[derive(Debug, Clone)]
