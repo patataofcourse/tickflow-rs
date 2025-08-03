@@ -3,17 +3,15 @@ use tickflow_derive::OperationSet;
 
 use crate as tickflow;
 
-use crate::{args_tf_op, args_tf_op_vec, tf_op, tf_op_vec};
-
 use tickflow_binaries::data::{
-    btks::BtksType, ArgsTickflowOpDef, OperationSet, Pointer, RawTickflowOp, TickflowOpDef,
+    btks::BtksType, Pointer, RawTickflowOp,
 };
 
 //TODO: derive macro that creates specifications automatically
 #[derive(OperationSet)]
 #[tickflow(btks_type=BtksType::MegamixIntl, endian=ByteOrder::LittleEndian)]
 pub enum MegamixOp {
-    //#[tickflow_op(0)]
+    #[tickflow_op(val = 0)]
     CallSub {
         //#[arg(0)]
         sub: u32,
@@ -22,111 +20,185 @@ pub enum MegamixOp {
         //#[arg(2, default=???)]
         cat: Option<u32>,
     },
+    #[tickflow_op(val = 1<0>)]
     CallFunc {
         func: u32,
         time: Option<u32>,
     },
+    #[tickflow_op(val = 1<1>)]
     SetFunc {
         func: u32,
         pos: Pointer,
     },
+    #[tickflow_op(val = 2)]
     Call {
         loc: Pointer,
         time: Option<u32>,
     },
+    #[tickflow_op(val = 3<0>)]
     KillAll,
+    #[tickflow_op(val = 3<1>)]
     KillCat(u32),
+    #[tickflow_op(val = 3<2>)]
     KillLoc(Pointer),
+    #[tickflow_op(val = 3<3>)]
     KillSub(u32),
+    #[tickflow_op(val = 4)]
     CallSubSync(u32),
+    #[tickflow_op(val = 5)]
     CallFuncSync(u32),
+    #[tickflow_op(val = 6)]
     CallSync(Pointer),
+    #[tickflow_op(val = 7)]
     Return,
+    #[tickflow_op(val = 8)]
     Stop,
+    #[tickflow_op(val = 9)]
     Cat(u32),
+    #[tickflow_op(val = 0xA)]
     SetCondvar(i32),
+    #[tickflow_op(val = 0xB)]
     AddCondvar(i32),
+    #[tickflow_op(val = 0xC)]
     PushCondvar,
+    #[tickflow_op(val = 0xD)]
     PopCondvar,
+    #[tickflow_op(val = 0xE)]
     Rest(u32),
+    #[tickflow_op(val = 0xF<0>)]
     SetRest {
         slot: u32,
         amount: u32,
     },
+    #[tickflow_op(val = 0xF<1>)]
     GetRest(u32),
+    #[tickflow_op(val = 0x10)]
     Sleep(u32),
+    #[tickflow_op(val = 0x11)]
     RestReset,
+    #[tickflow_op(val = 0x12)]
     Unrest(u32),
+    #[tickflow_op(val = 0x14)]
     Label(u32),
+    #[tickflow_op(val = 0x15)]
     Goto(u32),
+    #[tickflow_op(val = 0x16<0>)]
     IfEq(i32),
+    #[tickflow_op(val = 0x16<1>)]
     IfNe(i32),
+    #[tickflow_op(val = 0x16<2>)]
     IfLt(i32),
+    #[tickflow_op(val = 0x16<3>)]
     IfLe(i32),
+    #[tickflow_op(val = 0x16<4>)]
     IfGt(i32),
+    #[tickflow_op(val = 0x16<5>)]
     IfGe(i32),
+    #[tickflow_op(val = 0x17)]
     Else,
+    #[tickflow_op(val = 0x18)]
     EndIf,
+    #[tickflow_op(val = 0x19)]
     Switch,
+    #[tickflow_op(val = 0x1A)]
     Case(i32),
+    #[tickflow_op(val = 0x1B)]
     BreakCase,
+    #[tickflow_op(val = 0x1C)]
     DefaultCase,
+    #[tickflow_op(val = 0x1D)]
     EndSwitch,
+    #[tickflow_op(val = 0x1E<0>)]
     SetCountdown(i32),
+    #[tickflow_op(val = 0x1E<1>)]
     SetCountdownCondvar,
+    #[tickflow_op(val = 0x1E<2>)]
     GetCountdownInit,
+    #[tickflow_op(val = 0x1E<3>)]
     GetCountdownProgress,
+    #[tickflow_op(val = 0x1E<4>)]
     GetCountdown,
+    #[tickflow_op(val = 0x1E<5>)]
     DecCountdown,
+    #[tickflow_op(val = 0x21)]
     Tempo(u32),
+    #[tickflow_op(val = 0x22)]
     TempoRel {
         factor: u32,
         lower: u32,
         upper: u32,
     },
+    #[tickflow_op(val = 0x23)]
     TempoID(u32),
+    #[tickflow_op(val = 0x24)]
     Speed(u32),
+    #[tickflow_op(val = 0x25)]
     SpeedRel {
         factor: u32,
         lower: u32,
         upper: u32,
     },
-    Scene(u32),
+    #[tickflow_op(val = 0x27)]
+    Speed120 {
+        unk: u32,
+        val: u32,
+    },
+    //TODO: make this an enum
+    #[tickflow_op(val = 0x28<0>)]
+    Scene(i32),
+    #[tickflow_op(val = 0x28<1>)]
     SceneDone,
+    #[tickflow_op(val = 0x28<2>)]
     LoadStoredScene,
-    SetStoredScene,
+    #[tickflow_op(val = 0x28<3>)]
+    SetStoredScene(u32),
+    #[tickflow_op(val = 0x28<4>)]
     BottomScreenBg(bool),
+    #[tickflow_op(val = 0x29<0>)]
     SetSceneInitCounter,
+    #[tickflow_op(val = 0x29<1>)]
     IncSceneInitCounter(i32),
+    #[tickflow_op(val = 0x29<2>)]
     UnrestSceneInitCounter,
+    #[tickflow_op(val = 0x2A<0>)]
     SceneModel {
         scene: i32,
         model_slot: u32,
     },
+    #[tickflow_op(val = 0x2A<2>)]
     SceneCellanim {
         scene: i32,
         cellanim_slot: u32,
     },
+    #[tickflow_op(val = 0x2A<3>)]
     SceneEffect {
         scene: i32,
         effect_slot: u32,
     },
+    #[tickflow_op(val = 0x2A<4>)]
     SceneLayout {
         scene: i32,
         layout_slot: u32,
     },
+    #[tickflow_op(val = 0x2B<0>)]
     SceneVersion {
         scene: i32,
         version: u32, //TODO: make this an enum
     },
+    #[tickflow_op(val = 0x2B<1>)]
     SceneGetVersion(i32),
-    //TODO: make this yet another enum
+    //TODO: make an enum
+    #[tickflow_op(val = 0x2B<2>)]
     CurSceneIsVersion(u32),
+    #[tickflow_op(val = 0x2C<0>)]
     SceneUnload,
+    #[tickflow_op(val = 0x2C<1>)]
     SceneIsUnloaded,
+    #[tickflow_op(val = 0x2D)]
     Pause(bool),
 
-    Other(RawTickflowOp),
+    //#[tickflow_op(val = default)]
+    //Other(RawTickflowOp),
 }
 
 /* impl OperationSet for MegamixOp {
