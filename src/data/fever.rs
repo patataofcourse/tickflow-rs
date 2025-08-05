@@ -12,13 +12,6 @@ impl OperationSet for FeverUsOp {
 
     const ENDIAN: ByteOrder = ByteOrder::BigEndian;
 
-    fn get_operation(op: RawTickflowOp) -> Self
-    where
-        Self: Sized,
-    {
-        Self::Other(op)
-    }
-
     fn get_call_operations() -> Vec<ArgsTickflowOpDef> {
         args_tf_op_vec![
             0, [(0)];

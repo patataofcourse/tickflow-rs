@@ -4,8 +4,6 @@ pub mod btks;
 use btks::BtksType;
 use bytestream::ByteOrder;
 
-//TODO: figure out if most of this should stay here or move to another library like tickflow-parse (i think this should stay here and be a dependency of tickflow-parse)
-
 /// Tickflow operation as decompiled, before parsing
 #[derive(Debug, Clone)]
 pub struct RawTickflowOp {
@@ -19,7 +17,7 @@ pub struct RawTickflowOp {
 #[derive(Debug, Clone)]
 pub struct TickflowOp {
     pub op: u16,
-    pub arg0: Arg0,
+    pub arg0: u32,
     pub args: Vec<Arg>,
     pub scene: i32,
 }
@@ -75,7 +73,6 @@ impl PartialEq for TickflowOpDef {
 pub enum Arg0 {
     Signed(i32),
     Unsigned(u32),
-    Unknown(u32),
 }
 
 impl From<Arg0> for u32 {
@@ -83,20 +80,19 @@ impl From<Arg0> for u32 {
         match value {
             Arg0::Signed(c) => c as u32,
             Arg0::Unsigned(c) => c,
-            Arg0::Unknown(c) => c,
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum Arg {
+    Bool(bool),
     Signed(i32),
     Unsigned(u32),
     String(String),
+    Utf16(String),
     Array(Array),
     Pointer(Pointer),
-    Struct(Vec<u8>),
-    Unknown(u32),
 }
 
 #[derive(Debug, Clone)]
@@ -122,10 +118,6 @@ pub trait OperationSet {
 
     //TODO: tempo operations, sub operations
     //TODO: adapt to Fever/DS' quirks
-
-    fn get_operation(op: RawTickflowOp) -> Self
-    where
-        Self: Sized;
 
     fn get_call_operations() -> Vec<ArgsTickflowOpDef>;
     fn is_call_operation(op: &RawTickflowOp, scene: i32) -> Option<ArgsTickflowOpDef> {
@@ -240,21 +232,15 @@ pub trait OperationSet {
     }
 }
 
-impl Arg {
-    pub fn from_struct(s: impl Into<Vec<u8>>) -> Self {
-        Self::Struct(s.into())
-    }
-}
-
 impl From<RawTickflowOp> for TickflowOp {
     fn from(op: RawTickflowOp) -> Self {
         let mut args = vec![];
         for arg in op.args {
-            args.push(Arg::Unknown(arg))
+            args.push(Arg::Unsigned(arg))
         }
         TickflowOp {
             op: op.op,
-            arg0: Arg0::Unknown(op.arg0),
+            arg0: op.arg0,
             args,
             scene: op.scene,
         }
@@ -265,9 +251,6 @@ impl OperationSet for TickflowOp {
     const BTKS_TICKFLOW_TYPE: BtksType = BtksType::Unspecified;
     const ENDIAN: ByteOrder = ByteOrder::LittleEndian;
 
-    fn get_operation(op: RawTickflowOp) -> Self {
-        op.into()
-    }
     fn get_call_operations() -> Vec<ArgsTickflowOpDef> {
         unimplemented!("Operation types for generic TickflowOp")
     }
@@ -345,23 +328,12 @@ impl From<u32> for Arg {
     }
 }
 
-impl From<u32> for Arg0 {
-    fn from(int: u32) -> Self {
-        Self::Unsigned(int)
-    }
-}
-
 impl From<i32> for Arg {
     fn from(int: i32) -> Self {
         Self::Signed(int)
     }
 }
 
-impl From<i32> for Arg0 {
-    fn from(int: i32) -> Self {
-        Self::Signed(int)
-    }
-}
 
 impl From<i32> for Pointer {
     fn from(int: i32) -> Self {

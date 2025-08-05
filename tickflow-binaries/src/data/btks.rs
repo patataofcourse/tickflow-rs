@@ -1,6 +1,6 @@
 use std::io::{self, Cursor, Seek, SeekFrom, Write};
 
-use crate::{data::{TickflowOp}, extract::{self, Pointer}};
+use crate::{data::RawTickflowOp, extract::{self, Pointer}};
 
 use bytestream::{ByteOrder, StreamWriter};
 
@@ -133,13 +133,14 @@ impl BTKS {
         Ok(())
     }
 
+    //TODO: remove
     // for debugging reasons
-    pub fn to_raw_tickflow_ops(&self, endian: ByteOrder) -> Result<Vec<TickflowOp>> {
+    pub fn to_raw_tickflow_ops(&self, endian: ByteOrder) -> Result<Vec<RawTickflowOp>> {
         let mut data = Cursor::new(&self.flow.data);
         let mut ops = vec![];
         while data.position() != data.get_ref().len() as u64 {
             let raw_op = extract::binary_to_raw_tf_op(&mut data, -1, endian)?.1;
-            ops.push(raw_op.into())
+            ops.push(raw_op)
         }
         Ok(ops)
     }

@@ -5,7 +5,8 @@ use std::{
 use tickflow::{
     data::{fever::FeverUsOp, gold::GoldOp, megamix::MegamixOp, OperationSet},
     extract::{
-        self, dol::DolFile, fever::CODE_OFFSET as OFFSET_RHF, gold::TICKOVY_OFFSET_US, megamix::CODE_OFFSET as OFFSET_RHM
+        self, dol::DolFile, fever::CODE_OFFSET as OFFSET_RHF, gold::TICKOVY_OFFSET_US,
+        megamix::CODE_OFFSET as OFFSET_RHM,
     },
 };
 
@@ -17,7 +18,7 @@ const MEGAMIX_NAME: &str = extract::megamix::LOCATIONS_US.games[MEGAMIX_GAME].0;
 fn main() -> Result<()> {
     let mut f = File::open("test_files/code.bin")?;
     let btks = extract::extract::<MegamixOp>(&mut f, OFFSET_RHM, &[MEGAMIX_POS])?;
-    let mut fw = File::create(format!("test_files/{MEGAMIX_NAME}.btk", ))?;
+    let mut fw = File::create(format!("test_files/{MEGAMIX_NAME}.btk",))?;
 
     btks.to_btks_file(&mut fw, MegamixOp::ENDIAN)?;
 
@@ -35,16 +36,16 @@ fn main() -> Result<()> {
     for op in btks.to_raw_tickflow_ops(FeverUsOp::ENDIAN)? {
         let op = tickflow_parse::old::Statement::Command {
             cmd: tickflow_parse::old::CommandName::Raw(op.op as i32),
-            arg0: {
-                let temp = match op.arg0 {
-                tickflow::data::Arg0::Signed(c) => c,
-                tickflow::data::Arg0::Unsigned(c) => c as i32,
-                tickflow::data::Arg0::Unknown(c) => c as i32,
-            }; if temp == 0 {
+            arg0: if op.arg0 == 0 {
                 None
-            } else {Some(tickflow_parse::old::Value::Integer(temp))}
+            } else {
+                Some(tickflow_parse::old::Value::Integer(op.arg0 as i32))
             },
-            args: op.args.iter().map(|c| tickflow_parse::old::Value::Integer(match c { tickflow::data::Arg::Unknown(c) => *c as i32, _ => panic!()})).collect(),
+            args: op
+                .args
+                .iter()
+                .map(|c| tickflow_parse::old::Value::Integer(*c as i32))
+                .collect(),
         };
         writeln!(fw2, "{op}")?;
     }

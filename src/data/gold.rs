@@ -14,14 +14,6 @@ impl OperationSet for GoldOp {
     const BTKS_TICKFLOW_TYPE: BtksType = BtksType::Gold;
     const ENDIAN: ByteOrder = ByteOrder::LittleEndian;
 
-    fn get_operation(op: RawTickflowOp) -> Self
-    where
-        Self: Sized,
-    {
-        //TODO
-        Self::Other(op)
-    }
-
     fn get_scene_operation() -> ArgsTickflowOpDef {
         args_tf_op!(0x100, [(-1)])
     }
