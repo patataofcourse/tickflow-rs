@@ -128,7 +128,6 @@ impl<F: Read + Seek> Read for DolFile<F> {
 
 impl<F: Read + Seek> Seek for DolFile<F> {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
-        println!("{:08x?}", &pos);
         let pos = match pos {
             SeekFrom::Start(c) => c,
             SeekFrom::End(_) => unimplemented!("DOL seeking from end"),
