@@ -52,5 +52,7 @@ fn main() -> Result<()> {
 
     btks.to_btks_file(&mut fw, FeverUsOp::ENDIAN)?;
 
+    println!("{:#?}", serde_yaml::from_str::<Vec<tickflow::data::TickflowCmdDef>>(include_str!("../test_files/cmds.yml")).unwrap());
+
     Ok(())
 }
