@@ -1,11 +1,11 @@
 use bytestream::ByteOrder;
-use tickflow_binaries::data::{btks::BtksType, ArgsTickflowOpDef, OperationSet, RawTickflowOp, TickflowOpDef};
+use tickflow_binaries::data::{
+    btks::BtksType, ArgsTickflowOpDef, OperationSet, TickflowOpDef,
+};
 
 use crate::{args_tf_op, args_tf_op_vec, tf_op_vec};
 
-pub enum FeverUsOp {
-    Other(RawTickflowOp),
-}
+pub struct FeverUsOp;
 
 impl OperationSet for FeverUsOp {
     const BTKS_TICKFLOW_TYPE: BtksType = BtksType::FeverUs;

@@ -3,12 +3,10 @@ use bytestream::ByteOrder;
 use crate::args_tf_op;
 
 use tickflow_binaries::data::{
-    btks::BtksType, ArgsTickflowOpDef, OperationSet, RawTickflowOp, TickflowOpDef,
+    btks::BtksType, ArgsTickflowOpDef, OperationSet, TickflowOpDef,
 };
 
-pub enum GoldOp {
-    Other(RawTickflowOp),
-}
+pub struct GoldOp;
 
 impl OperationSet for GoldOp {
     const BTKS_TICKFLOW_TYPE: BtksType = BtksType::Gold;

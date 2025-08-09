@@ -18,7 +18,7 @@ pub struct RawTickflowOp {
 pub struct TickflowOp {
     pub op: u16,
     pub arg0: u32,
-    pub args: Vec<Arg>,
+    pub args: Vec<Value>,
     pub scene: i32,
 }
 
@@ -85,14 +85,40 @@ impl From<Arg0> for u32 {
 }
 
 #[derive(Debug, Clone)]
-pub enum Arg {
+pub enum Value {
     Bool(bool),
     Signed(i32),
     Unsigned(u32),
     String(String),
     Utf16(String),
     Array(Array),
-    Pointer(Pointer),
+    TfPointer(TfPointer),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum ValueType {
+    Bool,
+    Signed,
+    Unsigned,
+    String,
+    Utf16,
+    Array,
+    TfPointer
+}
+
+impl Value {
+    pub fn get_type(&self) -> ValueType {
+        match self {
+            Value::Bool(_) => ValueType::Bool,
+            Value::Signed(_) => ValueType::Signed,
+            Value::Unsigned(_) => ValueType::Unsigned,
+            Value::String(_) => ValueType::String,
+            Value::Utf16(_) => ValueType::Utf16,
+            Value::Array(_) => ValueType::Array,
+            Value::TfPointer(_) => ValueType::TfPointer,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -106,7 +132,7 @@ pub enum Array {
 }
 
 #[derive(Debug, Clone)]
-pub enum Pointer {
+pub enum TfPointer {
     Raw(u32),
     Label(String),
 }
@@ -236,7 +262,7 @@ impl From<RawTickflowOp> for TickflowOp {
     fn from(op: RawTickflowOp) -> Self {
         let mut args = vec![];
         for arg in op.args {
-            args.push(Arg::Unsigned(arg))
+            args.push(Value::Unsigned(arg))
         }
         TickflowOp {
             op: op.op,
@@ -310,38 +336,38 @@ impl From<Vec<i8>> for Array {
     }
 }
 
-impl From<Array> for Arg {
-    fn from(array: Array) -> Self {
-        Self::Array(array)
+impl<T> From<T> for Value where Array: From<T> {
+    fn from(value: T) -> Self {
+        Self::Array(value.into())
     }
 }
 
-impl From<String> for Arg {
+impl From<String> for Value {
     fn from(string: String) -> Self {
         Self::String(string)
     }
 }
 
-impl From<u32> for Arg {
+impl From<u32> for Value {
     fn from(int: u32) -> Self {
         Self::Unsigned(int)
     }
 }
 
-impl From<i32> for Arg {
+impl From<i32> for Value {
     fn from(int: i32) -> Self {
         Self::Signed(int)
     }
 }
 
 
-impl From<i32> for Pointer {
+impl From<i32> for TfPointer {
     fn from(int: i32) -> Self {
         Self::Raw(int as u32)
     }
 }
 
-impl From<u32> for Pointer {
+impl From<u32> for TfPointer {
     fn from(int: u32) -> Self {
         Self::Raw(int)
     }

@@ -7,3 +7,8 @@ version.workspace = true
 
 [dependencies]
 bytestream = "0.4.1"
+serde = { version = "1.0.219", features = ["derive"], optional = true }
+
+[features]
+default = ["serde"]
+serde = ["dep:serde"]
