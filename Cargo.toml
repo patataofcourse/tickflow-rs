@@ -18,4 +18,3 @@ tickflow-parse = { path = "tickflow-parse" }
 tickflow-binaries = { path = "tickflow-binaries"}
 serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
-serde_kdl = "0.1.0"
