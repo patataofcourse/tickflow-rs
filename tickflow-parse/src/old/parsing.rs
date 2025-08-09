@@ -81,14 +81,14 @@ pub fn read_statement(input: &str, fname: &str, line_num: usize) -> Result<State
             _ => Err(OldTfError::InvalidDirective(name).with_ctx(fname, line_num))?,
         }
     } else if let Ok((_, (name, _, _))) = tuple::<_, _, (), _>((ident, tag(":"), eof))(input) {
-        return Ok(Statement::Label(name));
+        Ok(Statement::Label(name))
     } else if let Ok((_, (name, _, _, _, value, _))) =
         tuple::<_, _, (), _>((ident, space0, tag("="), space0, value(fname, line_num), eof))(input)
     {
-        return Ok(Statement::Constant {
+        Ok(Statement::Constant {
             name,
             value: value?,
-        });
+        })
     } else {
         let (_, (cmd, arg0, args, _)) = tuple::<_, _, nom::error::Error<_>, _>((
             cmd_name(fname, line_num),
@@ -107,7 +107,7 @@ pub fn read_statement(input: &str, fname: &str, line_num: usize) -> Result<State
             OldTfError::SyntaxError.with_ctx(fname, line_num)
         })?;
         let args = args.map(|c| c.1).unwrap_or(vec![]);
-        return Ok(Statement::Command {
+        Ok(Statement::Command {
             cmd: cmd?,
             arg0: match arg0 {
                 Some((_, Err(e))) => Err(e)?,
@@ -115,13 +115,13 @@ pub fn read_statement(input: &str, fname: &str, line_num: usize) -> Result<State
                 None => None,
             },
             args: args.into_iter().collect::<Result<Vec<_>>>()?,
-        });
+        })
     }
 }
 
 pub fn ident<'a, E: nom::error::ParseError<&'a str>>(
     input: &'a str,
-) -> IResult<&str, Identifier, E> {
+) -> IResult<&'a str, Identifier, E> {
     let match_id = re_find(IDENTIFIER_REGEX.clone());
     let (remaining, ident) = match_id(input)?;
     Ok((remaining, Identifier::new_unchecked(ident)))
