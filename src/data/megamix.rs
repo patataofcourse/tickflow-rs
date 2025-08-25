@@ -203,7 +203,7 @@ impl OperationSet for MegamixOp {
     }
     fn get_string_operations() -> Vec<ArgsTickflowOpDef> {
         args_tf_op_vec![
-            0x31, [(1, true)];
+            0x31<0>, [(1, true)];
             0x35<0>, [(1, true)];
             0x36, [(1, true)];
             0x39<0>, [(1, true)];
