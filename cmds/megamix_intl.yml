@@ -1,0 +1,111 @@
+# Megamix (Intl.) command definitions
+
+# TODO: MAYBE add tickompiler names
+
+# TODO: does tick_delay allow negative values?
+
+- cmd: 0
+  arg0: 0
+  tkf_name: call_by_id
+  tks_name: call.by_id
+  args:
+    - name: sub_id
+      tf_type: uint
+      into: 0
+    - name: tick_delay
+      tf_type: uint
+      into: 1
+    - name: thread_cat
+      tf_type: uint
+      into: 2
+- cmd: 1
+  arg0: 0
+  tkf_name: call_stored
+  tks_name: call.stored
+  args:
+    - name: slot_num
+      tf_type: uint
+      into: 0
+    - name: tick_delay
+      tf_type: uint
+      into: 1
+- cmd: 1
+  arg0: 1
+  name: store_call # ???
+  args:
+    - name: slot_num
+      tf_type: uint
+      into: 0
+    - name: sub_pos
+      tf_type: sub # TODO: can be sub or sub_sync. is there any form of type checking that can be done here? if no, create sub_any type???
+      into: 1
+- cmd: 2
+  arg0: 0
+  name: call
+  args:
+    - name: sub_pos
+      tf_type: sub
+      into: 0
+    - name: tick_delay
+      tf_type: uint
+      into: 1
+- cmd: 3
+  arg0: 0
+  tkf_name: kill_all
+  tks_name: kill.all
+- cmd: 3
+  arg0: 1
+  tkf_name: kill_cat
+  tks_name: kill.cat
+  args:
+    - name: thread_cat
+      tf_type: uint
+      into: 0
+- cmd: 3
+  arg0: 2
+  tkf_name: kill_pos
+  tks_name: kill.pos
+  args:
+    - name: sub_pos
+      tf_type: sub
+      into: 0
+- cmd: 3
+  arg0: 3
+  tkf_name: kill_id
+  tks_name: kill.id
+  args:
+    - name: sub_id
+      tf_type: uint
+      into: 0
+- cmd: 4
+  arg0: 0
+  tkf_name: call_by_id_sync
+  tks_name: call.by_id_sync
+  args:
+    - name: sub_id
+      tf_type: uint
+      into: 0
+- cmd: 5
+  arg0: 0
+  tkf_name: call_stored_sync
+  tks_name: call.stored_sync
+  args:
+    - name: slot_num
+      tf_type: uint
+      into: 0
+- cmd: 6
+  arg0: 0
+  tkf_name: call_sync
+  tks_name: call.sync
+  args:
+    - name: sub_pos
+      tf_type: sub_sync
+      into: 0
+- cmd: 7
+  arg0: 0
+  name: return
+  is_return: true
+- cmd: 8
+  arg0: 0
+  name: stop
+  is_return: true

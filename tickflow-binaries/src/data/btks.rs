@@ -1,4 +1,4 @@
-use std::io::{self, Cursor, Seek, SeekFrom, Write};
+use std::io::{Cursor, Seek, SeekFrom, Write};
 
 use crate::{data::RawTickflowOp, extract::{self, Pointer}};
 
@@ -58,7 +58,7 @@ impl BTKS {
 }
 
 impl BTKS {
-    pub fn to_btks_file<F: Write + Seek>(&self, f: &mut F, endian: ByteOrder) -> io::Result<()> {
+    pub fn to_btks_file<F: Write + Seek>(&self, f: &mut F, endian: ByteOrder) -> Result<()> {
         // ------------
         //    Header
         // ------------
@@ -154,7 +154,7 @@ impl Tempo {
 }
 
 impl StreamWriter for Tempo {
-    fn write_to<W: Write>(&self, buffer: &mut W, order: ByteOrder) -> io::Result<()> {
+    fn write_to<W: Write>(&self, buffer: &mut W, order: ByteOrder) -> Result<()> {
         self.id.write_to(buffer, order)?;
         (self.data.len() as u32).write_to(buffer, order)?;
         (if self.is_streamed() { 1u32 } else { 0u32 }).write_to(buffer, order)?;
